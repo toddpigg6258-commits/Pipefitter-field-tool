@@ -1888,7 +1888,8 @@ th {
 .iso-grid-status { min-height:44px; display:flex; align-items:center; padding:9px 10px; border:1px solid #94a3b8; background:#fff; color:#111827; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; font-size:12px; }
 .iso-tap-shell { position:relative; }
 .iso-tap-viewport { height:560px; overflow:auto; border:2px solid #111827; background:#fff; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
-.iso-tap-scene { position:relative; width:1200px; height:900px; background:#fff; cursor:crosshair; }
+.iso-tap-scene { position:relative; width:1200px; height:900px; background:#fff; cursor:crosshair; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+.iso-tap-svg { touch-action:none; }
 .iso-drawing-quick-bar { position:absolute; left:10px; right:10px; bottom:10px; z-index:8; padding:9px; border:2px solid #111827; border-radius:10px; background:rgba(255,255,255,.97); box-shadow:0 8px 24px rgba(15,23,42,.22); color:#111827; }
 .iso-drawing-quick-head { display:flex; justify-content:space-between; gap:8px; align-items:center; margin-bottom:7px; font-size:11px; }
 .iso-drawing-quick-head span { color:#475569; text-align:right; }
