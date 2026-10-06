@@ -2164,3 +2164,8 @@ th {
 
 .iso-first-run-capture { display:none; position:absolute; inset:0; z-index:4; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; background:transparent; }
 .iso-first-run-capture.active { display:block; }
+
+/* Mobile drawing zoom fallback for embedded/in-app browsers that do not pass pinch gestures through. */
+.iso-mobile-zoom-controls { position:absolute; top:10px; right:10px; z-index:10; display:flex; gap:6px; }
+.iso-mobile-zoom-controls button { width:44px; height:44px; padding:0; border:2px solid #111827; border-radius:8px; background:rgba(255,255,255,.96); color:#111827; font-size:28px; font-weight:900; line-height:1; box-shadow:0 2px 8px rgba(15,23,42,.18); touch-action:manipulation; }
+@media (min-width:761px) { .iso-mobile-zoom-controls { display:none; } }
