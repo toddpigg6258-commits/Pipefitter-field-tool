@@ -12,6 +12,8 @@ let isoGridSnapEnabled = true;
 let isoGridTapGuard = null;
 let isoGridPinchActive = false;
 let isoGridPinchSuppressUntil = 0;
+let isoGridPanActive = false;
+let isoGridPanSuppressUntil = 0;
 let isoGridState = {
   SHARED: { segments: [], symbols: [] },
 };
@@ -1886,13 +1888,60 @@ function initIsoDrawing() {
     isoGridTap({ clientX: event.clientX, clientY: event.clientY, target: scene, preventDefault: () => {}, stopPropagation: () => {} }, true);
   });
   scene.addEventListener('click', event => {
-    if (event.target === capture) return;
+    if (event.target === capture || Date.now() < isoGridPanSuppressUntil) return;
     isoGridTap(event, true);
   });
 
+  // One-finger swipe pans around the drawing after zooming.
+  // A stationary tap still draws/selects; movement turns the gesture into pan.
+  const viewport = $('isoTapViewport');
+  let panStart = null;
+  scene.addEventListener('touchstart', event => {
+    if (!viewport || event.touches.length !== 1 || isoGridPinchActive) {
+      panStart = null;
+      return;
+    }
+    const touch = event.touches[0];
+    panStart = {
+      x: touch.clientX,
+      y: touch.clientY,
+      scrollLeft: viewport.scrollLeft,
+      scrollTop: viewport.scrollTop,
+    };
+    isoGridPanActive = false;
+  }, { capture: true, passive: true });
+  scene.addEventListener('touchmove', event => {
+    if (!viewport || !panStart || event.touches.length !== 1 || isoGridPinchActive) return;
+    const touch = event.touches[0];
+    const dx = touch.clientX - panStart.x;
+    const dy = touch.clientY - panStart.y;
+    if (!isoGridPanActive && Math.hypot(dx, dy) < 9) return;
+    isoGridPanActive = true;
+    isoGridPanSuppressUntil = Date.now() + 650;
+    captureStart = null;
+    viewport.scrollLeft = panStart.scrollLeft - dx;
+    viewport.scrollTop = panStart.scrollTop - dy;
+    event.preventDefault();
+  }, { capture: true, passive: false });
+  const finishPan = event => {
+    if (!panStart) return;
+    const didPan = isoGridPanActive;
+    panStart = null;
+    isoGridPanActive = false;
+    if (!didPan) return;
+    isoGridPanSuppressUntil = Date.now() + 650;
+    isoGridTapGuard = { until: Date.now() + 650 };
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  scene.addEventListener('touchend', finishPan, { capture: true, passive: false });
+  scene.addEventListener('touchcancel', event => {
+    panStart = null;
+    isoGridPanActive = false;
+  }, { capture: true, passive: true });
+
   // Two-finger pinch zoom for the drawing itself on iPhone/iPad.
   // Keep tap-to-draw and tap-pipe-for-tee separate from multi-touch gestures.
-  const viewport = $('isoTapViewport');
   let pinchStartDistance = 0;
   let pinchStartZoom = isoGridZoom;
   let pinchCenter = null;
