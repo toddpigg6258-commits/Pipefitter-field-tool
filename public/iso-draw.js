@@ -1778,38 +1778,44 @@ function initIsoDrawing() {
   isoGridApplyDisplayState();
   const scene = $('isoTapScene');
   if (!scene) return;
-  // iPhone Safari: use native touch events for finger taps. Pointer events remain for pen.
-  // This avoids Safari's delayed/synthetic click sequence swallowing the next real finger tap.
-  const touchStarts = new Map();
+  // iPhone Safari: commit finger drawing on TOUCHSTART, not touchend/click.
+  // This also supports a second finger while the first finger is still on the glass.
+  // Endpoint/symbol/measurement controls keep their own drag/edit behavior.
+  const fingerTouchIds = new Set();
   scene.addEventListener('touchstart', event => {
+    let handled = false;
     for (const touch of event.changedTouches) {
-      touchStarts.set(touch.identifier, { x: touch.clientX, y: touch.clientY });
-    }
-  }, { passive: true });
-  scene.addEventListener('touchend', event => {
-    for (const touch of event.changedTouches) {
-      const start = touchStarts.get(touch.identifier);
-      touchStarts.delete(touch.identifier);
-      if (!start) continue;
-      if (Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 12) continue;
+      fingerTouchIds.add(touch.identifier);
       const target = document.elementFromPoint(touch.clientX, touch.clientY) || event.target;
-      if (target?.closest?.('[data-grid-symbol],[data-grid-measure],[data-grid-rise],[data-grid-run]')) continue;
+      if (target?.closest?.('[data-grid-symbol],[data-grid-measure],[data-grid-rise],[data-grid-run],.iso-end-handle,.iso-end-touch')) continue;
       const segmentBody = target?.closest?.('[data-grid-segment]');
-      const endpoint = target?.closest?.('.iso-end-handle,.iso-end-touch');
-      if (segmentBody && !endpoint) continue;
+      if (segmentBody) continue;
       isoGridTap({
         clientX: touch.clientX,
         clientY: touch.clientY,
         target,
-        preventDefault: () => event.preventDefault(),
-        stopPropagation: () => event.stopPropagation(),
+        preventDefault: () => {},
+        stopPropagation: () => {},
       }, true);
-      isoGridTapGuard = { until: Date.now() + 650 };
+      handled = true;
+    }
+    if (handled) {
+      isoGridTapGuard = { until: Date.now() + 800 };
+      event.preventDefault();
+    }
+  }, { passive: false });
+  scene.addEventListener('touchend', event => {
+    let wasFinger = false;
+    for (const touch of event.changedTouches) {
+      if (fingerTouchIds.delete(touch.identifier)) wasFinger = true;
+    }
+    if (wasFinger) {
+      isoGridTapGuard = { until: Date.now() + 800 };
       event.preventDefault();
     }
   }, { passive: false });
   scene.addEventListener('touchcancel', event => {
-    for (const touch of event.changedTouches) touchStarts.delete(touch.identifier);
+    for (const touch of event.changedTouches) fingerTouchIds.delete(touch.identifier);
   }, { passive: true });
 
   let penTapStart = null;
