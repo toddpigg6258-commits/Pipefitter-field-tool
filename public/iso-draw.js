@@ -1147,6 +1147,19 @@ function isoGridSetMode(mode, button) {
   else isoGridSetStatus(`STAMP mode: tap a grid point to place ${isoGridMode.replaceAll('_', ' ')}. Symbols can be dragged and rotated after placement.`);
 }
 
+function isoGridRecoverVisibleStartPoint() {
+  const marker = $('isoTapSvg')?.querySelector('.iso-tap-current');
+  if (!marker) return null;
+  const displayPoint = {
+    x: Number(marker.getAttribute('cx')),
+    y: Number(marker.getAttribute('cy')),
+  };
+  if (!Number.isFinite(displayPoint.x) || !Number.isFinite(displayPoint.y)) return null;
+  const point = isoGridFromViewPoint(displayPoint);
+  if (isoGridView === 'ISO') point.isoDisplayPoint = { ...displayPoint };
+  return point;
+}
+
 function isoGridTap(event, bypassTapGuard = false) {
   if (!bypassTapGuard && isoGridTapGuard) {
     if (Date.now() <= isoGridTapGuard.until) {
@@ -1199,6 +1212,7 @@ function isoGridTap(event, bypassTapGuard = false) {
     isoGridRender();
     return;
   }
+  if (!isoGridLastPoint) isoGridLastPoint = isoGridRecoverVisibleStartPoint();
   if (!isoGridLastPoint) {
     isoGridLastPoint = point;
     isoGridSetStatus('Start point set. Tap the next grid point and the pipe line will draw automatically.');
