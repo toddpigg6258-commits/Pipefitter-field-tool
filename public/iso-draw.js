@@ -1805,31 +1805,20 @@ function initIsoDrawing() {
     capture.className = 'iso-first-run-capture';
     scene.appendChild(capture);
   }
-  let captureStart = null;
-  capture.addEventListener('touchstart', event => {
-    const touch = event.changedTouches[0];
-    if (!touch) return;
-    captureStart = { x: touch.clientX, y: touch.clientY };
-    event.preventDefault();
-  }, { passive: false });
-  capture.addEventListener('touchend', event => {
-    const touch = event.changedTouches[0];
-    const start = captureStart;
-    captureStart = null;
-    if (!touch || !start || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 14) return;
+  // Keep the first-run surface persistent across SVG redraws and use normal
+  // click activation for finger taps. iPhone/WebKit can suppress a follow-up
+  // touchstart/pointerdown in rapid sequential taps, while click remains the
+  // stable activation event. The same element receives tap 1 and tap 2.
+  capture.addEventListener('click', event => {
     isoGridTap({
-      clientX: touch.clientX,
-      clientY: touch.clientY,
+      clientX: event.clientX,
+      clientY: event.clientY,
       target: scene,
       preventDefault: () => {},
       stopPropagation: () => {},
     }, true);
     event.preventDefault();
-  }, { passive: false });
-  capture.addEventListener('touchcancel', () => { captureStart = null; }, { passive: true });
-  capture.addEventListener('click', event => {
-    if ('ontouchstart' in window) return;
-    isoGridTap({ clientX: event.clientX, clientY: event.clientY, target: scene, preventDefault: () => {}, stopPropagation: () => {} }, true);
+    event.stopPropagation();
   });
   scene.addEventListener('click', event => {
     if (event.target === capture) return;
