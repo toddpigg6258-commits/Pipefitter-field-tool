@@ -1109,40 +1109,56 @@ function isoGridRender() {
     });
   });
   const bindEndpointDrag = handle => {
+    handle.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
     handle.addEventListener('pointerdown', event => {
-      const drawing = isoGridCurrent();
-      const segment = drawing.segments[+handle.dataset.gridSegment];
-      const endpoint = segment?.[handle.dataset.gridEnd];
-      const isActiveEndpoint = endpoint && isoGridMode === 'LINE' && isoGridLastPoint && endpoint.x === isoGridLastPoint.x && endpoint.y === isoGridLastPoint.y;
-      if (!isActiveEndpoint) {
-        isoGridStartEndpointDrag(event, +handle.dataset.gridSegment, handle.dataset.gridEnd);
-        return;
-      }
+      if (event.pointerType === 'touch' && isoGridPinchActive) return;
+      const segmentIndex = +handle.dataset.gridSegment;
+      const endpointKey = handle.dataset.gridEnd;
       const startX = event.clientX;
       const startY = event.clientY;
       const pointerId = event.pointerId;
       let dragging = false;
+      let canceled = false;
       const move = moveEvent => {
         if (moveEvent.pointerId !== pointerId) return;
+        if (event.pointerType === 'touch' && isoGridPinchActive) {
+          canceled = true;
+          cleanup();
+          return;
+        }
         if (!dragging && Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY) < 8) return;
         if (!dragging) {
           dragging = true;
           cleanup();
-          isoGridStartEndpointDrag(event, +handle.dataset.gridSegment, handle.dataset.gridEnd);
+          isoGridStartEndpointDrag(event, segmentIndex, endpointKey);
         }
       };
       const up = upEvent => {
         if (upEvent.pointerId !== pointerId) return;
+        const pinchBlocked = isoGridPinchActive || Date.now() < isoGridPinchSuppressUntil;
+        cleanup();
+        if (!dragging && !canceled && !pinchBlocked) {
+          upEvent.preventDefault();
+          upEvent.stopPropagation();
+          isoGridActivateEndpoint(segmentIndex, endpointKey);
+        }
+      };
+      const cancel = cancelEvent => {
+        if (cancelEvent.pointerId !== pointerId) return;
+        canceled = true;
         cleanup();
       };
       const cleanup = () => {
         window.removeEventListener('pointermove', move);
         window.removeEventListener('pointerup', up);
-        window.removeEventListener('pointercancel', up);
+        window.removeEventListener('pointercancel', cancel);
       };
       window.addEventListener('pointermove', move);
       window.addEventListener('pointerup', up);
-      window.addEventListener('pointercancel', up);
+      window.addEventListener('pointercancel', cancel);
     });
   };
   svg.querySelectorAll('.iso-end-handle').forEach(bindEndpointDrag);
@@ -1258,6 +1274,21 @@ function isoGridSelectSegment(index) {
   isoGridSelectedSegment = index;
   isoGridSelectedSymbol = -1;
   isoGridSetStatus(`Pipe section S${index + 1} selected. Edit its DIM and measurement in the drawing toolbar, or drag either amber endpoint handle.`);
+  isoGridRender();
+}
+
+function isoGridActivateEndpoint(segmentIndex, endpointKey) {
+  const drawing = isoGridCurrent();
+  const segment = drawing.segments[segmentIndex];
+  const endpoint = segment?.[endpointKey];
+  if (!endpoint) return;
+  isoGridMode = 'LINE';
+  document.querySelectorAll('[data-iso-stamp]').forEach(item => item.classList.toggle('on', item.dataset.isoStamp === 'LINE'));
+  isoGridSelectedSegment = segmentIndex;
+  isoGridSelectedSymbol = -1;
+  isoGridLastPoint = { ...endpoint };
+  isoGridTapGuard = { until: Date.now() + 500 };
+  isoGridSetStatus(`Endpoint highlighted on S${segmentIndex + 1}. Your next grid tap draws from this point. Drag the amber handle if you want to move the endpoint instead.`);
   isoGridRender();
 }
 
