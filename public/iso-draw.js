@@ -1147,19 +1147,6 @@ function isoGridSetMode(mode, button) {
   else isoGridSetStatus(`STAMP mode: tap a grid point to place ${isoGridMode.replaceAll('_', ' ')}. Symbols can be dragged and rotated after placement.`);
 }
 
-function isoGridRecoverVisibleStartPoint() {
-  const marker = $('isoTapSvg')?.querySelector('.iso-tap-current');
-  if (!marker) return null;
-  const displayPoint = {
-    x: Number(marker.getAttribute('cx')),
-    y: Number(marker.getAttribute('cy')),
-  };
-  if (!Number.isFinite(displayPoint.x) || !Number.isFinite(displayPoint.y)) return null;
-  const point = isoGridFromViewPoint(displayPoint);
-  if (isoGridView === 'ISO') point.isoDisplayPoint = { ...displayPoint };
-  return point;
-}
-
 function isoGridTap(event, bypassTapGuard = false) {
   if (!bypassTapGuard && isoGridTapGuard) {
     if (Date.now() <= isoGridTapGuard.until) {
@@ -1188,7 +1175,7 @@ function isoGridTap(event, bypassTapGuard = false) {
       if (rawDisplay && Math.min(Math.hypot(rawDisplay.x - aDisplay.x, rawDisplay.y - aDisplay.y), Math.hypot(rawDisplay.x - bDisplay.x, rawDisplay.y - bDisplay.y)) > 14) return;
     } else return;
   }
-  const point = isoGridEventPoint(event, true, true);
+  let point = isoGridEventPoint(event, true, true);
   if (!point) return;
   const drawing = isoGridCurrent();
   if (isoGridMode !== 'LINE') {
@@ -1212,7 +1199,6 @@ function isoGridTap(event, bypassTapGuard = false) {
     isoGridRender();
     return;
   }
-  if (!isoGridLastPoint) isoGridLastPoint = isoGridRecoverVisibleStartPoint();
   if (!isoGridLastPoint) {
     isoGridLastPoint = point;
     isoGridSetStatus('Start point set. Tap the next grid point and the pipe line will draw automatically.');
@@ -1805,20 +1791,31 @@ function initIsoDrawing() {
     capture.className = 'iso-first-run-capture';
     scene.appendChild(capture);
   }
-  // Keep the first-run surface persistent across SVG redraws and use normal
-  // click activation for finger taps. iPhone/WebKit can suppress a follow-up
-  // touchstart/pointerdown in rapid sequential taps, while click remains the
-  // stable activation event. The same element receives tap 1 and tap 2.
-  capture.addEventListener('click', event => {
+  let captureStart = null;
+  capture.addEventListener('touchstart', event => {
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    captureStart = { x: touch.clientX, y: touch.clientY };
+    event.preventDefault();
+  }, { passive: false });
+  capture.addEventListener('touchend', event => {
+    const touch = event.changedTouches[0];
+    const start = captureStart;
+    captureStart = null;
+    if (!touch || !start || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 14) return;
     isoGridTap({
-      clientX: event.clientX,
-      clientY: event.clientY,
+      clientX: touch.clientX,
+      clientY: touch.clientY,
       target: scene,
       preventDefault: () => {},
       stopPropagation: () => {},
     }, true);
     event.preventDefault();
-    event.stopPropagation();
+  }, { passive: false });
+  capture.addEventListener('touchcancel', () => { captureStart = null; }, { passive: true });
+  capture.addEventListener('click', event => {
+    if ('ontouchstart' in window) return;
+    isoGridTap({ clientX: event.clientX, clientY: event.clientY, target: scene, preventDefault: () => {}, stopPropagation: () => {} }, true);
   });
   scene.addEventListener('click', event => {
     if (event.target === capture) return;
