@@ -1050,6 +1050,35 @@ function isoGridRender() {
   svg.querySelectorAll('[data-grid-run]').forEach(element => { element.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); const index = +element.dataset.gridRun; isoGridSelectSegment(index); setTimeout(isoGridQuickEditRunMeasurement, 0); }); });
   svg.querySelectorAll('[data-grid-segment]').forEach(element => {
     if (element.classList.contains('iso-end-handle')) return;
+    let branchTouchStart = null;
+    element.addEventListener('touchstart', event => {
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      branchTouchStart = { x: touch.clientX, y: touch.clientY };
+    }, { passive: true });
+    element.addEventListener('touchend', event => {
+      const touch = event.changedTouches[0];
+      const start = branchTouchStart;
+      branchTouchStart = null;
+      if (!touch || !start || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 14) return;
+      const editingEndpoint = event.target.closest?.('.iso-end-handle, .iso-end-touch');
+      const editingMeasure = event.target.closest?.('[data-grid-measure], [data-grid-rise], [data-grid-run]');
+      if (editingEndpoint || editingMeasure) return;
+      const index = +element.dataset.gridSegment;
+      const touchEvent = {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        target: event.target,
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      };
+      if (isoGridMode === 'LINE' && isoGridStartBranchOnSegment(index, touchEvent)) {
+        isoGridTapGuard = { until: Date.now() + 700 };
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }, { passive: false });
+    element.addEventListener('touchcancel', () => { branchTouchStart = null; }, { passive: true });
     element.addEventListener('click', event => {
       event.stopPropagation();
       if (isoGridTapGuard) {
