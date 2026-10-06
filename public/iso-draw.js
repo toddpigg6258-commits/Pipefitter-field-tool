@@ -1778,28 +1778,54 @@ function initIsoDrawing() {
   isoGridApplyDisplayState();
   const scene = $('isoTapScene');
   if (!scene) return;
-  let touchTapStart = null;
-  scene.addEventListener('pointerdown', event => {
-    if (event.pointerType === 'touch' || event.pointerType === 'pen') {
-      touchTapStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  // iPhone Safari: use native touch events for finger taps. Pointer events remain for pen.
+  // This avoids Safari's delayed/synthetic click sequence swallowing the next real finger tap.
+  const touchStarts = new Map();
+  scene.addEventListener('touchstart', event => {
+    for (const touch of event.changedTouches) {
+      touchStarts.set(touch.identifier, { x: touch.clientX, y: touch.clientY });
     }
+  }, { passive: true });
+  scene.addEventListener('touchend', event => {
+    for (const touch of event.changedTouches) {
+      const start = touchStarts.get(touch.identifier);
+      touchStarts.delete(touch.identifier);
+      if (!start) continue;
+      if (Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 12) continue;
+      const target = document.elementFromPoint(touch.clientX, touch.clientY) || event.target;
+      if (target?.closest?.('[data-grid-symbol],[data-grid-measure],[data-grid-rise],[data-grid-run]')) continue;
+      const segmentBody = target?.closest?.('[data-grid-segment]');
+      const endpoint = target?.closest?.('.iso-end-handle,.iso-end-touch');
+      if (segmentBody && !endpoint) continue;
+      isoGridTap({
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        target,
+        preventDefault: () => event.preventDefault(),
+        stopPropagation: () => event.stopPropagation(),
+      }, true);
+      isoGridTapGuard = { until: Date.now() + 650 };
+      event.preventDefault();
+    }
+  }, { passive: false });
+  scene.addEventListener('touchcancel', event => {
+    for (const touch of event.changedTouches) touchStarts.delete(touch.identifier);
+  }, { passive: true });
+
+  let penTapStart = null;
+  scene.addEventListener('pointerdown', event => {
+    if (event.pointerType === 'pen') penTapStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
   });
   scene.addEventListener('pointerup', event => {
-    if (!touchTapStart || event.pointerId !== touchTapStart.id) return;
-    const moved = Math.hypot(event.clientX - touchTapStart.x, event.clientY - touchTapStart.y);
-    touchTapStart = null;
+    if (event.pointerType !== 'pen' || !penTapStart || event.pointerId !== penTapStart.id) return;
+    const moved = Math.hypot(event.clientX - penTapStart.x, event.clientY - penTapStart.y);
+    penTapStart = null;
     if (moved > 12) return;
-    if (event.target.closest('[data-grid-symbol],[data-grid-measure],[data-grid-rise],[data-grid-run]')) return;
-    const segmentBody = event.target.closest('[data-grid-segment]');
-    const endpoint = event.target.closest('.iso-end-handle,.iso-end-touch');
-    if (segmentBody && !endpoint) return;
-    // A real touch/pen pointerup must never be blocked by the synthetic-click guard.
-    // The guard exists only to swallow the compatibility click Safari emits after this tap.
     isoGridTap(event, true);
     isoGridTapGuard = { until: Date.now() + 650 };
     event.preventDefault();
   });
-  scene.addEventListener('pointercancel', () => { touchTapStart = null; });
+  scene.addEventListener('pointercancel', event => { if (event.pointerType === 'pen') penTapStart = null; });
   scene.addEventListener('click', isoGridTap);
   const scale = $('isoGridScale');
   if (scale) scale.addEventListener('change', () => {
