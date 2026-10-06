@@ -1929,6 +1929,79 @@ function initIsoDrawing() {
     pinchCenter = null;
     isoGridRender();
   }, { passive: false });
+
+  // Pointer-event pinch path for embedded/in-app iOS browsers.
+  // Some webviews suppress TouchEvent multi-touch but still expose touch pointers.
+  const pinchPointers = new Map();
+  let pointerPinchStartDistance = 0;
+  let pointerPinchStartZoom = isoGridZoom;
+  let pointerPinchCenter = null;
+  const pointerPair = () => Array.from(pinchPointers.values()).slice(0, 2);
+  const pointerDistance = pair => Math.hypot(pair[0].x - pair[1].x, pair[0].y - pair[1].y);
+  const beginPointerPinch = pair => {
+    isoGridPinchActive = true;
+    isoGridPinchSuppressUntil = Date.now() + 600;
+    captureStart = null;
+    pointerPinchStartDistance = Math.max(1, pointerDistance(pair));
+    pointerPinchStartZoom = isoGridZoom;
+    if (viewport) {
+      const rect = viewport.getBoundingClientRect();
+      const clientX = (pair[0].x + pair[1].x) / 2;
+      const clientY = (pair[0].y + pair[1].y) / 2;
+      pointerPinchCenter = {
+        contentX: (viewport.scrollLeft + clientX - rect.left) / isoGridZoom,
+        contentY: (viewport.scrollTop + clientY - rect.top) / isoGridZoom,
+      };
+    }
+  };
+  scene.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'touch') return;
+    pinchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pinchPointers.size === 2) {
+      beginPointerPinch(pointerPair());
+      event.preventDefault();
+    }
+  }, { capture: true });
+  scene.addEventListener('pointermove', event => {
+    if (event.pointerType !== 'touch' || !pinchPointers.has(event.pointerId)) return;
+    pinchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pinchPointers.size < 2 || !isoGridPinchActive) return;
+    const pair = pointerPair();
+    const nextZoom = Math.max(0.8, Math.min(2.8, pointerPinchStartZoom * pointerDistance(pair) / pointerPinchStartDistance));
+    isoGridZoom = Math.round(nextZoom * 100) / 100;
+    const width = ISO_GRID_WIDTH * isoGridZoom;
+    const height = ISO_GRID_HEIGHT * isoGridZoom;
+    scene.style.width = `${width}px`;
+    scene.style.height = `${height}px`;
+    const svg = $('isoTapSvg');
+    if (svg) {
+      svg.style.width = `${width}px`;
+      svg.style.height = `${height}px`;
+    }
+    if (viewport && pointerPinchCenter) {
+      const rect = viewport.getBoundingClientRect();
+      const clientX = (pair[0].x + pair[1].x) / 2;
+      const clientY = (pair[0].y + pair[1].y) / 2;
+      viewport.scrollLeft = pointerPinchCenter.contentX * isoGridZoom - (clientX - rect.left);
+      viewport.scrollTop = pointerPinchCenter.contentY * isoGridZoom - (clientY - rect.top);
+    }
+    event.preventDefault();
+  }, { capture: true });
+  const endPointerPinch = event => {
+    if (event.pointerType !== 'touch') return;
+    const wasPinching = isoGridPinchActive && pinchPointers.size >= 2;
+    pinchPointers.delete(event.pointerId);
+    if (!wasPinching || pinchPointers.size >= 2) return;
+    isoGridPinchActive = false;
+    isoGridPinchSuppressUntil = Date.now() + 600;
+    pointerPinchCenter = null;
+    isoGridSetStatus(`Zoom ${isoGridZoom.toFixed(1)}×. Two-finger pinch zoom is active.`);
+    isoGridRender();
+    isoGridSave();
+    event.preventDefault();
+  };
+  scene.addEventListener('pointerup', endPointerPinch, { capture: true });
+  scene.addEventListener('pointercancel', endPointerPinch, { capture: true });
   const scale = $('isoGridScale');
   if (scale) scale.addEventListener('change', () => {
     isoGridSetStatus('Drawing scale changed. Automatic dimensions were recalculated; manual section dimensions stay unchanged.');
