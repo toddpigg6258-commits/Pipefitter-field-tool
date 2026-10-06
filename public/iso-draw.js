@@ -1145,8 +1145,8 @@ function isoGridSetMode(mode, button) {
   else isoGridSetStatus(`STAMP mode: tap a grid point to place ${isoGridMode.replaceAll('_', ' ')}. Symbols can be dragged and rotated after placement.`);
 }
 
-function isoGridTap(event) {
-  if (isoGridTapGuard) {
+function isoGridTap(event, bypassTapGuard = false) {
+  if (!bypassTapGuard && isoGridTapGuard) {
     if (Date.now() <= isoGridTapGuard.until) {
       event.preventDefault();
       event.stopPropagation();
@@ -1793,7 +1793,9 @@ function initIsoDrawing() {
     const segmentBody = event.target.closest('[data-grid-segment]');
     const endpoint = event.target.closest('.iso-end-handle,.iso-end-touch');
     if (segmentBody && !endpoint) return;
-    isoGridTap(event);
+    // A real touch/pen pointerup must never be blocked by the synthetic-click guard.
+    // The guard exists only to swallow the compatibility click Safari emits after this tap.
+    isoGridTap(event, true);
     isoGridTapGuard = { until: Date.now() + 650 };
     event.preventDefault();
   });
