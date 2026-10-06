@@ -1778,13 +1778,46 @@ function initIsoDrawing() {
   isoGridApplyDisplayState();
   const scene = $('isoTapScene');
   if (!scene) return;
-  // A pipe run is deliberately a normal sequential tap workflow:
-  // tap once, release, then tap a second point and release.
-  // Let Safari finish each tap and deliver one click; do not synthesize taps
-  // from touchstart/touchend or hold a guard across the next finger tap.
+  // iPhone sequential workflow: each completed finger tap is handled on
+  // document touchend, so re-rendering the SVG after the first dot cannot
+  // detach the handler needed for the second tap.
   isoGridTapGuard = null;
+  let lastFingerTapAt = 0;
+  const fingerStarts = new Map();
+  document.addEventListener('touchstart', event => {
+    const rect = scene.getBoundingClientRect();
+    for (const touch of event.changedTouches) {
+      if (touch.clientX < rect.left || touch.clientX > rect.right || touch.clientY < rect.top || touch.clientY > rect.bottom) continue;
+      fingerStarts.set(touch.identifier, { x: touch.clientX, y: touch.clientY });
+    }
+  }, { capture: true, passive: true });
+  document.addEventListener('touchend', event => {
+    const rect = scene.getBoundingClientRect();
+    let handled = false;
+    for (const touch of event.changedTouches) {
+      const start = fingerStarts.get(touch.identifier);
+      fingerStarts.delete(touch.identifier);
+      if (!start || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 14) continue;
+      if (touch.clientX < rect.left || touch.clientX > rect.right || touch.clientY < rect.top || touch.clientY > rect.bottom) continue;
+      isoGridTap({
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        target: scene,
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      }, true);
+      handled = true;
+    }
+    if (handled) {
+      lastFingerTapAt = Date.now();
+      event.preventDefault();
+    }
+  }, { capture: true, passive: false });
+  document.addEventListener('touchcancel', event => {
+    for (const touch of event.changedTouches) fingerStarts.delete(touch.identifier);
+  }, { capture: true, passive: true });
   scene.addEventListener('click', event => {
-    isoGridTapGuard = null;
+    if (Date.now() - lastFingerTapAt < 700) return;
     isoGridTap(event, true);
   });
   const scale = $('isoGridScale');
