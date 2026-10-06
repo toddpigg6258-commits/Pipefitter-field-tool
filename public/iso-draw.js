@@ -1039,6 +1039,8 @@ function isoGridRender() {
     markup += `<circle cx="${currentViewPoint.x}" cy="${currentViewPoint.y}" r="8" class="iso-tap-current"/>`;
   }
   svg.innerHTML = markup;
+  const firstRunCapture = $('isoFirstRunCapture');
+  if (firstRunCapture) firstRunCapture.classList.toggle('active', isoGridMode === 'LINE' && drawing.segments.length === 0);
   svg.querySelectorAll('[data-grid-measure]').forEach(element => {
     element.addEventListener('click', event => {
       event.preventDefault(); event.stopPropagation(); const index = +element.dataset.gridMeasure; isoGridSelectSegment(index); setTimeout(isoGridQuickEditMeasurement, 0);
@@ -1778,46 +1780,45 @@ function initIsoDrawing() {
   isoGridApplyDisplayState();
   const scene = $('isoTapScene');
   if (!scene) return;
-  // iPhone sequential workflow: each completed finger tap is handled on
-  // document touchend, so re-rendering the SVG after the first dot cannot
-  // detach the handler needed for the second tap.
+  // Dedicated persistent first-run capture layer for iPhone Safari.
+  // It is outside the SVG, so the SVG can redraw the orange start dot without
+  // destroying the element that receives the next tap.
   isoGridTapGuard = null;
-  let lastFingerTapAt = 0;
-  const fingerStarts = new Map();
-  document.addEventListener('touchstart', event => {
-    const rect = scene.getBoundingClientRect();
-    for (const touch of event.changedTouches) {
-      if (touch.clientX < rect.left || touch.clientX > rect.right || touch.clientY < rect.top || touch.clientY > rect.bottom) continue;
-      fingerStarts.set(touch.identifier, { x: touch.clientX, y: touch.clientY });
-    }
-  }, { capture: true, passive: true });
-  document.addEventListener('touchend', event => {
-    const rect = scene.getBoundingClientRect();
-    let handled = false;
-    for (const touch of event.changedTouches) {
-      const start = fingerStarts.get(touch.identifier);
-      fingerStarts.delete(touch.identifier);
-      if (!start || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 14) continue;
-      if (touch.clientX < rect.left || touch.clientX > rect.right || touch.clientY < rect.top || touch.clientY > rect.bottom) continue;
-      isoGridTap({
-        clientX: touch.clientX,
-        clientY: touch.clientY,
-        target: scene,
-        preventDefault: () => {},
-        stopPropagation: () => {},
-      }, true);
-      handled = true;
-    }
-    if (handled) {
-      lastFingerTapAt = Date.now();
-      event.preventDefault();
-    }
-  }, { capture: true, passive: false });
-  document.addEventListener('touchcancel', event => {
-    for (const touch of event.changedTouches) fingerStarts.delete(touch.identifier);
-  }, { capture: true, passive: true });
+  let capture = $('isoFirstRunCapture');
+  if (!capture) {
+    capture = document.createElement('div');
+    capture.id = 'isoFirstRunCapture';
+    capture.className = 'iso-first-run-capture';
+    scene.appendChild(capture);
+  }
+  let captureStart = null;
+  capture.addEventListener('touchstart', event => {
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    captureStart = { x: touch.clientX, y: touch.clientY };
+    event.preventDefault();
+  }, { passive: false });
+  capture.addEventListener('touchend', event => {
+    const touch = event.changedTouches[0];
+    const start = captureStart;
+    captureStart = null;
+    if (!touch || !start || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 14) return;
+    isoGridTap({
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      target: scene,
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    }, true);
+    event.preventDefault();
+  }, { passive: false });
+  capture.addEventListener('touchcancel', () => { captureStart = null; }, { passive: true });
+  capture.addEventListener('click', event => {
+    if ('ontouchstart' in window) return;
+    isoGridTap({ clientX: event.clientX, clientY: event.clientY, target: scene, preventDefault: () => {}, stopPropagation: () => {} }, true);
+  });
   scene.addEventListener('click', event => {
-    if (Date.now() - lastFingerTapAt < 700) return;
+    if (event.target === capture) return;
     isoGridTap(event, true);
   });
   const scale = $('isoGridScale');
