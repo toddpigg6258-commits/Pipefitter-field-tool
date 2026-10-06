@@ -1,0 +1,865 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0a1220" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Pipefitter Field Pro" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Pipefitter Field Pro</title>
+    <link rel="stylesheet" href="./app.css?v=47" />
+  </head>
+  <body>
+    <div class="app">
+      <section id="calc" class="page on">
+        <div class="card calc-shell">
+          <div class="calc-screen">
+            <div id="calcHistory" class="calc-history">
+              Regular numbers + feet / inches / fractions
+            </div>
+            <div id="calcMain" class="calc-value">0</div>
+            <div id="calcSub" class="calc-sub">Regular number • no units</div>
+          </div>
+          <div class="calc-entry-grid">
+            <div class="calc-main-keys">
+              <div class="keypad">
+            <button onclick="cKey('7')">7</button
+            ><button onclick="cKey('8')">8</button
+            ><button onclick="cKey('9')">9</button
+            ><button class="op" onclick="cOperator('/')">÷</button
+            ><button onclick="cKey('4')">4</button
+            ><button onclick="cKey('5')">5</button
+            ><button onclick="cKey('6')">6</button
+            ><button class="op" onclick="cOperator('*')">×</button
+            ><button onclick="cKey('1')">1</button
+            ><button onclick="cKey('2')">2</button
+            ><button onclick="cKey('3')">3</button
+            ><button class="op" onclick="cOperator('-')">−</button
+            ><button onclick="cKey('0')">0</button
+            ><button onclick="cKey('.')">.</button
+            ><button class="op" onclick="cOperator('+')">+</button
+            ><button class="eq" onclick="cEquals()">=</button>
+          </div>
+          <div class="unit-row">
+            <button class="unit" onclick="cFeet()">FEET</button
+            ><button class="unit" onclick="cInch()">INCH</button
+            ><button class="frac-key" onclick="cSlash()">/</button
+            ><button onclick="cToggleSign()">+/−</button
+            ><button onclick="cBack()">⌫</button
+            ><button class="danger" onclick="cClear()">CLEAR</button>
+          </div>
+            </div>
+            <div class="calc-fraction-side">
+              <div class="fraction-label side">COMMON INCH FRACTIONS</div>
+              <div class="quick-frac side">
+            <button onclick="cFraction(1, 8)">1/8</button
+            ><button onclick="cFraction(1, 4)">1/4</button
+            ><button onclick="cFraction(3, 8)">3/8</button
+            ><button onclick="cFraction(1, 2)">1/2</button
+            ><button onclick="cFraction(5, 8)">5/8</button
+            ><button onclick="cFraction(3, 4)">3/4</button
+            ><button onclick="cFraction(7, 8)">7/8</button>
+              </div>
+            </div>
+          </div>
+          <div class="precision">
+            <span class="muted">Answer precision</span
+            ><select
+              id="precision"
+              onchange="
+                cRender();
+                refreshAll();
+              "
+            >
+              <option value="8">1/8</option>
+              <option value="16" selected>1/16</option>
+              <option value="32">1/32</option>
+            </select>
+          </div>
+        </div>
+        <div id="conv" class="hidden" aria-hidden="true"></div>
+        <div class="card">
+          <div class="section-title">
+            <h3>Rise / Run / Travel / Angle</h3>
+            <span class="source">Solve from any 2 values</span>
+          </div>
+          <div class="grid">
+            <label
+              >Rise<input id="triRise" type="hidden" /><button
+                class="measure-launch"
+                onclick="openMeasurePad('triRise', 'Rise')"
+              >
+                <span id="triRiseDisplay" class="value">Tap to enter</span
+                ><span class="hint">FT • IN • FRACTION ›</span>
+              </button></label
+            ><label
+              >Run<input id="triRun" type="hidden" /><button
+                class="measure-launch"
+                onclick="openMeasurePad('triRun', 'Run')"
+              >
+                <span id="triRunDisplay" class="value">Tap to enter</span
+                ><span class="hint">FT • IN • FRACTION ›</span>
+              </button></label
+            ><label
+              >Travel<input id="triTravel" type="hidden" /><button
+                class="measure-launch"
+                onclick="openMeasurePad('triTravel', 'Travel')"
+              >
+                <span id="triTravelDisplay" class="value">Tap to enter</span
+                ><span class="hint">FT • IN • FRACTION ›</span>
+              </button></label
+            ><label
+              >Angle (degrees)<input
+                id="triAngle"
+                type="number"
+                inputmode="decimal"
+                step="0.1"
+                min="0.1"
+                max="89.9"
+                placeholder="45"
+            /></label>
+          </div>
+          <div class="actions">
+            <button class="primary" onclick="solveTriangle()">SOLVE</button
+            ><button onclick="clearTriangle()">CLEAR</button>
+          </div>
+          <div id="triOut" class="result"></div>
+        </div>
+      </section>
+      <section id="layout" class="page">
+        <h2>Offsets + Cut Length</h2>
+        <div class="card good">
+          <b>Easier entry:</b> use <b>USE CALC</b> to drop the calculator answer
+          into a measurement box.
+        </div>
+        <div class="card offset-card">
+          <div class="section-title"><h3>Simple Offset</h3><span class="source">OFFSET • TRAVEL • SETBACK</span></div>
+          <div class="offset-definition"><b>Read the drawing and the answer the same way:</b> OFFSET is the centerline change, TRAVEL is the diagonal pipe between fittings, and SETBACK / ADVANCE is the straight distance between fitting centers along the original run.</div>
+          <svg viewBox="0 0 720 250" class="mini-diagram offset-explain-svg" aria-label="Simple offset diagram using Offset Travel and Setback labels">
+            <line x1="55" y1="178" x2="260" y2="178" class="pipe"></line><line x1="470" y1="78" x2="670" y2="78" class="pipe"></line><line x1="260" y1="178" x2="470" y2="78" class="offset-travel"></line><line x1="260" y1="178" x2="470" y2="178" class="offset-measure"></line><line x1="470" y1="178" x2="470" y2="78" class="offset-measure"></line>
+            <text x="74" y="205">RUN PIPE</text><text x="505" y="57">OFFSET PIPE</text><text x="338" y="119" class="offset-label travel-label">TRAVEL</text><text x="319" y="204" class="offset-label">SETBACK / ADVANCE</text><text x="486" y="133" class="offset-label">OFFSET</text>
+          </svg>
+          <div class="grid">
+            <label>Offset<div class="input-row"><input id="off" value='12"' /><button class="mini" onclick="fillInputFromCalc('off')">USE CALC</button></div></label>
+            <label>Fitting angle<select id="oa"><option>22.5</option><option>30</option><option selected>45</option><option>60</option></select></label>
+          </div>
+          <button class="primary" onclick="offsetCalc()">CALCULATE OFFSET</button>
+          <div id="offOut" class="result"></div>
+        </div>
+        <div class="card offset-card">
+          <div class="section-title"><h3>Rolling Offset</h3><span class="source">T • R • V • H • x</span></div>
+          <div class="offset-definition"><b>Match the picture:</b> V = Vertical Offset, H = Horizontal Offset, x = True Offset, T = Travel, and R = Run between angles.</div>
+          <svg viewBox="0 0 760 430" class="mini-diagram rolling-reference-svg" aria-label="Rolling offset reference using T R V H and true offset x">
+            <defs><marker id="rollArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z"></path></marker></defs>
+            <text x="18" y="34" class="roll-title">Rolling Offset</text>
+            <polygon points="198,101 392,32 590,170 393,237" class="roll-plane"></polygon><polygon points="198,101 198,253 393,389 393,237" class="roll-plane"></polygon><polygon points="393,237 590,170 590,319 393,389" class="roll-plane"></polygon>
+            <line x1="82" y1="228" x2="196" y2="182" class="roll-pipe"></line><polyline points="196,182 560,146 688,230" class="roll-pipe"></polyline>
+            <line x1="204" y1="183" x2="553" y2="147" class="roll-dim"></line><text x="350" y="164">(T) Travel</text>
+            <line x1="176" y1="222" x2="392" y2="356" class="roll-dim"></line><text x="218" y="310">(R) Run</text>
+            <line x1="606" y1="149" x2="606" y2="270" class="roll-dim"></line><text x="620" y="214">V</text>
+            <line x1="396" y1="372" x2="548" y2="314" class="roll-dim"></line><text x="496" y="337">H</text>
+            <line x1="552" y1="149" x2="440" y2="353" class="roll-true"></line><text x="510" y="236">x</text>
+            <text x="18" y="365" class="roll-key">T = Travel or section length</text><text x="18" y="390" class="roll-key">R = Run between angles</text><text x="18" y="415" class="roll-key">V = Vertical Offset • H = Horizontal Offset • x = True Offset</text>
+          </svg>
+          <div class="grid">
+            <label>V — Vertical Offset<div class="input-row"><input id="rv" value='12"' /><button class="mini" onclick="fillInputFromCalc('rv')">USE CALC</button></div></label>
+            <label>H — Horizontal Offset<div class="input-row"><input id="rh" value='12"' /><button class="mini" onclick="fillInputFromCalc('rh')">USE CALC</button></div></label>
+            <label>Fitting angle<select id="ra"><option>22.5</option><option>30</option><option selected>45</option><option>60</option></select></label>
+          </div>
+          <button class="primary" onclick="rollCalc()">CALCULATE T / R / x</button>
+          <div id="rollOut" class="result"></div>
+        </div>
+        <div class="card">
+          <h3>Spool / Cut Length</h3>
+          <div class="grid">
+            <label
+              >Center-to-center
+              <div class="input-row">
+                <input id="ctc" value="8' 0&quot;" /><button
+                  class="mini"
+                  onclick="fillInputFromCalc('ctc')"
+                >
+                  USE CALC
+                </button>
+              </div></label
+            ><label
+              >Takeoff A
+              <div class="input-row">
+                <input id="ta" value='6"' /><button
+                  class="mini"
+                  onclick="fillInputFromCalc('ta')"
+                >
+                  USE CALC
+                </button>
+              </div></label
+            ><label
+              >Takeoff B
+              <div class="input-row">
+                <input id="tb" value='6"' /><button
+                  class="mini"
+                  onclick="fillInputFromCalc('tb')"
+                >
+                  USE CALC
+                </button>
+              </div></label
+            >
+          </div>
+          <button class="primary" onclick="spoolCalc()">CALCULATE</button>
+          <div id="spoolOut" class="result"></div>
+        </div>
+      </section>
+      <section id="tools" class="page">
+        <h2>Field Tools</h2>
+        <div class="section-subtabs tools-subtabs" role="tablist" aria-label="Field tool categories"><button class="on" data-subtab-button-group="tools" data-subtab-button-panel="pipe" onclick="selectSectionTab('tools','pipe',this)">PIPE</button><button data-subtab-button-group="tools" data-subtab-button-panel="slope" onclick="selectSectionTab('tools','slope',this)">SLOPE / VOLUME</button><button data-subtab-button-group="tools" data-subtab-button-panel="offset" onclick="selectSectionTab('tools','offset',this)">ELBOW / OFFSET</button><button data-subtab-button-group="tools" data-subtab-button-panel="layout" onclick="selectSectionTab('tools','layout',this)">LAYOUT</button><button data-subtab-button-group="tools" data-subtab-button-panel="formula" onclick="selectSectionTab('tools','formula',this)">FORMULAS</button><button data-subtab-button-group="tools" data-subtab-button-panel="notes" onclick="selectSectionTab('tools','notes',this)">NOTES</button></div>
+        <div class="card good"><b>Fast field math:</b> choose a tab above so only the tools you need are on screen. Measurements use the same feet / inches / fraction pad throughout the app.</div>
+        <div class="tool-grid">
+          <div class="card tool-card" data-subtab-group="tools" data-subtab-panel="pipe">
+            <div class="section-title"><h3>Pipe Wrap / Degree Marks</h3><span class="source">Uses actual pipe OD</span></div>
+            <div class="grid">
+              <label>Pipe NPS<select id="toolWrapSize"></select></label>
+              <label>Degree mark<input id="toolWrapDeg" type="number" inputmode="decimal" value="90" min="0" max="360" step="0.1"></label>
+              <label>Equal divisions<select id="toolWrapDivs"><option>4</option><option selected>8</option><option>12</option><option>16</option><option>24</option><option>32</option></select></label>
+            </div>
+            <button class="primary" onclick="toolWrapCalc()">BUILD WRAP MARKS</button>
+            <div id="toolWrapOut" class="result"></div>
+          </div>
+          <div class="card tool-card" data-subtab-group="tools" data-subtab-panel="pipe">
+            <div class="section-title"><h3>Pipe Elevation</h3><span class="source">Top / CL / bottom</span></div>
+            <div class="grid">
+              <label>Pipe NPS<select id="toolElevSize"></select></label>
+              <label>Centerline elevation<input id="toolElevCL" placeholder="Tap to enter"></label>
+            </div>
+            <button class="primary" onclick="toolElevationCalc()">CALCULATE ELEVATIONS</button>
+            <div id="toolElevOut" class="result"></div>
+          </div>
+          <div class="card tool-card hidden" data-subtab-group="tools" data-subtab-panel="slope">
+            <div class="section-title"><h3>Slope / Pitch</h3><span class="source">Rise ↔ percent grade</span></div>
+            <div class="grid">
+              <label>Run<input id="toolSlopeRun" placeholder="Tap to enter"></label>
+              <label>Rise<input id="toolSlopeRise" placeholder="Tap to enter"></label>
+              <label>Percent grade (optional)<input id="toolSlopePct" type="number" inputmode="decimal" placeholder="Example 2" step="0.01"></label>
+            </div>
+            <button class="primary" onclick="toolSlopeCalc()">CALCULATE SLOPE</button>
+            <div id="toolSlopeOut" class="result"></div>
+          </div>
+          <div class="card tool-card hidden" data-subtab-group="tools" data-subtab-panel="slope">
+            <div class="section-title"><h3>Pipe Volume</h3><span class="source">Enter actual inside diameter</span></div>
+            <div class="grid">
+              <label>Inside diameter (in)<input id="toolVolID" type="number" inputmode="decimal" min="0" step="0.001" placeholder="Actual ID"></label>
+              <label>Pipe length<input id="toolVolLen" placeholder="Tap to enter"></label>
+            </div>
+            <button class="primary" onclick="toolVolumeCalc()">CALCULATE VOLUME</button>
+            <div id="toolVolOut" class="result"></div>
+            <div class="note-box muted">Inside diameter changes with schedule/material. Enter the actual ID instead of assuming a wall thickness.</div>
+          </div>
+          <div class="tools-offset-panel hidden" data-subtab-group="tools" data-subtab-panel="offset">
+            <div class="section-subtabs tools-offset-tabs" role="tablist" aria-label="Elbow and offset calculators"><button class="on" data-offset-tab="cutdown" onclick="selectToolsOffsetTab('cutdown',this)">CUT DOWN 90</button><button data-offset-tab="spread" onclick="selectToolsOffsetTab('spread',this)">EQUAL SPREAD</button><button data-offset-tab="special" onclick="selectToolsOffsetTab('special',this)">SPECIAL TWO 90s</button><button data-offset-tab="any" onclick="selectToolsOffsetTab('any',this)">ANY-ANGLE OFFSET</button></div>
+          <div class="card tool-card miter-helper-card" data-offset-tool="cutdown">
+            <div class="section-title"><h3>90° Elbow Cut-Down Helper</h3><span class="source">TURN A 90 INTO ANY SMALLER ANGLE</span></div>
+            <img src="./resources/how-to-cut-down-90-elbow.jpeg" class="offset-tool-picture offset-tool-photo" alt="How to cut down a 90 degree elbow to another angle" onerror="this.style.display='none';document.getElementById('elbowFallbackGuide').style.display='grid'"><div id="elbowFallbackGuide" class="elbow-layout-guide" aria-label="Elbow cut-down tape layout guide" style="display:none">
+              <div class="elbow-layout-panel">
+                <b>1 • KEEP ONE FACTORY END</b>
+                <svg viewBox="0 0 340 230" role="img" aria-label="Real elbow showing kept end and new cut line">
+                  <path d="M38 182 H126 A116 116 0 0 1 242 66 V32" class="elbow-scrap"></path>
+                  <path d="M38 182 H126 A116 116 0 0 1 217 111" class="elbow-keep"></path>
+                  <line x1="229" y1="127" x2="204" y2="95" class="elbow-new-cut"></line>
+                  <line x1="38" y1="153" x2="38" y2="211" class="elbow-zero"></line>
+                  <text x="20" y="222" class="elbow-zero-text">ZERO / START TAPE HERE</text>
+                  <text x="100" y="139">KEEP THIS ELBOW PIECE</text>
+                  <text x="205" y="86" class="elbow-blue-text">NEW CUT</text>
+                  <text x="250" y="48">SCRAP</text>
+                </svg>
+              </div>
+              <div class="elbow-layout-panel">
+                <b>2 • MAKE 4 MARKS FROM THE SAME ZERO</b>
+                <svg viewBox="0 0 340 230" role="img" aria-label="Four elbow surface measurements from the same factory bevel">
+                  <line x1="72" y1="34" x2="72" y2="205" class="layout-zero-line"></line>
+                  <text x="18" y="22">FACTORY BEVEL = 0</text>
+                  <text x="8" y="62">HEEL</text><line x1="72" y1="58" x2="286" y2="58" class="layout-measure-line"></line><circle cx="286" cy="58" r="6" class="layout-mark"></circle>
+                  <text x="8" y="103">SIDE</text><line x1="72" y1="99" x2="250" y2="99" class="layout-measure-line"></line><circle cx="250" cy="99" r="6" class="layout-mark"></circle>
+                  <text x="8" y="144">THROAT</text><line x1="72" y1="140" x2="212" y2="140" class="layout-measure-line"></line><circle cx="212" cy="140" r="6" class="layout-mark"></circle>
+                  <text x="8" y="185">SIDE</text><line x1="72" y1="181" x2="250" y2="181" class="layout-measure-line"></line><circle cx="250" cy="181" r="6" class="layout-mark"></circle>
+                  <text x="88" y="218">Use the 4 calculated distances below.</text>
+                </svg>
+              </div>
+            </div>
+            <div class="miter-steps"><div><b>1 • PICK THE BW 90</b><span>Select long-radius or short-radius so the app uses the loaded 90° center-to-end A dimension.</span></div><div><b>2 • ENTER FINISHED ANGLE</b><span>Example: 40°, 30°, 22.5°, or any angle below 90°.</span></div><div><b>3 • CHOOSE THE END YOU KEEP</b><span>Leave that factory bevel untouched. That end is your measurement reference.</span></div><div><b>4 • MEASURE THE FINISHED PIECE</b><span>Measure HEEL / SIDE / THROAT / SIDE from the kept factory bevel to the new cut line. The dimensions describe the elbow you will actually install.</span></div></div>
+            <div class="note-box"><b>WORKED CUTBACK EXAMPLE — 4&quot; LR 90 → 40°</b><br>Keep one factory bevel as ZERO and measure on the elbow piece you will install. Mark <b>HEEL 5-3/4&quot;</b> • <b>SIDE 4-3/16&quot;</b> • <b>THROAT 2-5/8&quot;</b> • <b>SIDE 4-3/16&quot;</b>, then connect those four marks for the new cut line. Original 90° takeout A = <b>6&quot;</b>. Finished 40° takeout ≈ <b>2-3/16&quot;</b>, so the <b>TAKEOUT CUTBACK ≈ 3-13/16&quot;</b>. Example values are rounded to the nearest 1/16&quot;.</div>
+            <div class="grid">
+              <label>Finished elbow angle<input id="toolMiterAngle" type="number" inputmode="decimal" min="0.1" max="90" step="0.1" value="40"></label>
+              <label>Pipe NPS<select id="toolMiterSize"></select></label>
+              <label>Welded elbow type<select id="toolMiterType"><option value="LR90" selected>90° Long Radius BW elbow</option><option value="SR90">90° Short Radius BW elbow</option><option value="CUSTOM">Custom CLR / special elbow</option></select></label>
+              <label>Cut method<select id="toolMiterCutMode"><option value="ONE_END" selected>Normal — keep one factory end / measure kept piece</option><option value="EQUAL_BOTH">Advanced — equal trim both ends</option></select></label>
+              <label>Custom CLR only<input id="toolMiterRadius" placeholder="Only used for Custom CLR"></label>
+            </div>
+            <button class="primary" onclick="toolMiterCalc()">CALCULATE 90° CUT-DOWN</button>
+            <div id="toolMiterOut" class="result"></div>
+            <div class="note-box muted"><b>Butt-weld field layout:</b> for the normal one-end cut, choose the factory bevel you are keeping and use it as ZERO. Measure along the elbow you are keeping to the new cut line at HEEL / SIDE / THROAT / SIDE. The four measurements below describe the finished piece you will install — not the scrap piece. Everything beyond the new cut line toward the other original end is cut off. The finished field-cut takeout is A × tan(finished angle ÷ 2).</div>
+          </div>
+          <div class="card tool-card hidden" data-offset-tool="any">
+            <div class="section-title"><h3>Any-Angle Offset</h3><span class="source">Use any fitting angle</span></div>
+            <svg viewBox="0 0 420 180" class="offset-tool-picture" role="img" aria-label="Any-angle offset showing offset, travel, and angle"><path d="M28 136 H115 L300 44 H392" class="offset-picture-pipe"></path><line x1="115" y1="136" x2="300" y2="136" class="offset-picture-dim"></line><line x1="300" y1="136" x2="300" y2="44" class="offset-picture-dim"></line><path d="M148 136 A36 36 0 0 1 180 119" class="offset-picture-angle"></path><text x="187" y="103">TRAVEL</text><text x="310" y="94">OFFSET</text><text x="151" y="157">ANGLE</text></svg>
+            <div class="grid">
+              <label>Offset<input id="toolAnyOffset" value='12"' placeholder="Tap to enter"></label>
+              <label>Angle (degrees)<input id="toolAnyAngle" type="number" inputmode="decimal" min="0.1" max="89.9" step="0.1" value="37"></label>
+            </div>
+            <button class="primary" onclick="toolAnyOffsetCalc()">CALCULATE ANY-ANGLE OFFSET</button>
+            <div id="toolAnyOffsetOut" class="result"></div>
+            <div class="note-box muted">Centerline geometry only. Fitting takeoffs are still handled separately.</div>
+          </div>
+          <div class="card tool-card hidden" data-offset-tool="special">
+            <div class="section-title"><h3>Special Offset — Two 90s Welded Together</h3><span class="source">NO STRAIGHT PIPE BETWEEN ELBOWS</span></div>
+            <svg viewBox="0 0 420 180" class="offset-tool-picture" role="img" aria-label="Two cut-down 90 degree elbows welded directly together to make a small offset"><path d="M28 132 H104 C137 132 143 100 166 82 C188 64 198 48 232 48 H392" class="offset-picture-pipe"></path><circle cx="174" cy="76" r="7" class="offset-picture-joint"></circle><line x1="330" y1="132" x2="330" y2="48" class="offset-picture-dim"></line><text x="185" y="102">WELD</text><text x="340" y="94">RISE</text><text x="32" y="158">NO STRAIGHT PIPE BETWEEN ELBOWS</text></svg>
+            <div class="grid"><label>Desired rise / offset<input id="toolSpecialOffset" value='11&quot;'></label><label>Pipe NPS<select id="toolSpecialSize"></select></label><label>90 elbow type<select id="toolSpecialType" onchange="toolSpecialOffsetCalc()"><option value="LR90" selected>Long Radius BW 90</option><option value="SR90">Short Radius BW 90</option><option value="CUSTOM">Custom CLR 90</option></select></label><label>Custom CLR only<input id="toolSpecialRadius" placeholder="Only used for Custom CLR"></label></div>
+            <button class="primary" onclick="toolSpecialOffsetCalc()">FIGURE ELBOW CUT-DOWN</button>
+            <div id="toolSpecialOffsetOut" class="result"></div>
+            <div class="note-box muted">For two identical elbows touching each other, <b>offset = 2R(1 − cos θ)</b>. The calculator solves θ and gives the HEEL / SIDE / THROAT marks for each 90 you keep.</div>
+          </div>
+          <div class="card tool-card hidden" data-offset-tool="spread">
+            <div class="section-title"><h3>Equal Spread Offset</h3><span class="source">KEEP PARALLEL LINES EQUALLY SPACED</span></div>
+            <svg viewBox="0 0 420 180" class="offset-tool-picture" role="img" aria-label="Three parallel equal-spread offset pipes with staggered turn points"><polyline points="28,142 112,142 250,58 392,58" class="offset-picture-pipe thin"></polyline><polyline points="28,112 96,112 234,28 392,28" class="offset-picture-pipe thin"></polyline><polyline points="28,172 128,172 266,88 392,88" class="offset-picture-pipe thin"></polyline><line x1="60" y1="112" x2="60" y2="142" class="offset-picture-dim"></line><line x1="60" y1="142" x2="60" y2="172" class="offset-picture-dim"></line><text x="72" y="132">EQUAL SPACING</text><text x="238" y="124">TRAVEL AHEAD</text></svg>
+            <div class="grid"><label>Pipe spacing C-C<input id="toolSpreadSpacing" value='8&quot;'></label><label>Turn angle<input id="toolSpreadAngle" type="number" inputmode="decimal" min="0.1" max="179.9" step="0.1" value="45"></label><label>Number of parallel lines<input id="toolSpreadLines" type="number" inputmode="numeric" min="2" max="12" step="1" value="3"></label><label>Line 1 center-to-face<input id="toolSpreadBase" value="1' 0&quot;"></label></div>
+            <button class="primary" onclick="toolEqualSpreadCalc()">CALCULATE TRAVEL AHEAD</button>
+            <div id="toolEqualSpreadOut" class="result"></div>
+            <div class="note-box muted">Travel ahead per adjacent line = spacing × tan(turn angle ÷ 2). At 45° with 8&quot; spacing this is about 3-5/16&quot; per line.</div>
+          </div>
+          </div>
+          <div class="card tool-card hidden" data-subtab-group="tools" data-subtab-panel="layout">
+            <div class="section-title"><h3>Bolt Circle / Chord Spacing</h3><span class="source">Layout from actual BCD + hole count</span></div>
+            <div class="grid">
+              <label>Bolt circle diameter (BCD)<input id="toolBoltBcd" value='8"' placeholder="Tap to enter"></label>
+              <label>Number of holes<input id="toolBoltHoles" type="number" inputmode="numeric" min="2" step="1" value="8"></label>
+            </div>
+            <button class="primary" onclick="toolBoltCircleCalc()">CALCULATE BOLT SPACING</button>
+            <div id="toolBoltCircleOut" class="result"></div>
+            <div class="note-box muted">Use the actual bolt-circle diameter and hole count from the flange/drawing. This tool does not assume a flange standard.</div>
+          </div>
+          <div class="card tool-card hidden" data-subtab-group="tools" data-subtab-panel="layout">
+            <div class="section-title"><h3>Square / Diagonal Check</h3><span class="source">Rack • frame • support layout</span></div>
+            <div class="grid">
+              <label>Length<input id="toolSquareLength" value="4' 0&quot;" placeholder="Tap to enter"></label>
+              <label>Width<input id="toolSquareWidth" value="3' 0&quot;" placeholder="Tap to enter"></label>
+            </div>
+            <button class="primary" onclick="toolSquareCalc()">CALCULATE DIAGONAL</button>
+            <div id="toolSquareOut" class="result"></div>
+          </div>
+          <div class="card tool-card formula-bank hidden" data-subtab-group="tools" data-subtab-panel="formula">
+            <div class="section-title"><h3>Pipefitter Formula + Cheat Sheet</h3><span class="source">Fast field reference</span></div>
+            <div class="formula-row"><b>Rolling true offset</b><span>√(vertical² + side²)</span></div>
+            <div class="formula-row"><b>Rolling orientation angle</b><span>atan(vertical ÷ horizontal)</span></div>
+            <div class="formula-row"><b>Offset travel</b><span>offset ÷ sin(angle)</span></div>
+            <div class="formula-row"><b>Offset setback / advance</b><span>offset ÷ tan(angle)</span></div>
+            <div class="formula-row"><b>22.5° offset</b><span>travel × 2.613 • setback × 2.414</span></div>
+            <div class="formula-row"><b>30° offset</b><span>travel × 2.000 • setback × 1.732</span></div>
+            <div class="formula-row"><b>45° offset</b><span>travel × 1.414 • setback × 1.000</span></div>
+            <div class="formula-row"><b>60° offset</b><span>travel × 1.155 • setback × 0.577</span></div>
+            <div class="formula-row"><b>Pipe circumference</b><span>π × outside diameter</span></div>
+            <div class="formula-row"><b>Degree mark around pipe</b><span>circumference × degrees ÷ 360</span></div>
+            <div class="formula-row"><b>Equal wrap spacing</b><span>circumference ÷ number of spaces</span></div>
+            <div class="formula-row"><b>Bolt-circle adjacent chord</b><span>BCD × sin(180° ÷ hole count)</span></div>
+            <div class="formula-row"><b>Square / rectangle diagonal</b><span>√(length² + width²)</span></div>
+            <div class="formula-row"><b>Slope percent</b><span>rise ÷ run × 100</span></div>
+            <div class="formula-row"><b>Pitch</b><span>rise ÷ run × 12 in/ft</span></div>
+            <div class="formula-row"><b>Slope quick reference</b><span>1/16&quot;/ft = 0.521% • 1/8&quot;/ft = 1.042% • 1/4&quot;/ft = 2.083% • 3/8&quot;/ft = 3.125% • 1/2&quot;/ft = 4.167%</span></div>
+            <div class="formula-row"><b>Decimal inch quick reference</b><span>.125 = 1/8 • .250 = 1/4 • .375 = 3/8 • .500 = 1/2 • .625 = 5/8 • .750 = 3/4 • .875 = 7/8</span></div>
+            <div class="formula-row"><b>Pipe gallons per foot</b><span>0.0408 × actual ID² (ID in inches)</span></div>
+            <div class="formula-row"><b>Field-cut BW elbow takeout</b><span>new takeout = 90° elbow A × tan(desired angle ÷ 2) • one-end trim angle = 90° − desired</span></div><div class="formula-row"><b>Two touching 90s special offset</b><span>θ = acos(1 − offset ÷ 2R) • cut each 90 to θ</span></div><div class="formula-row"><b>Equal spread travel ahead</b><span>pipe spacing × tan(turn angle ÷ 2)</span></div><div class="formula-row"><b>Flange bolt wrench</b><span>wrench = (1.5 × bolt diameter) + 1/8&quot;</span></div>
+          </div>
+        </div>
+        <div class="card hidden" data-subtab-group="tools" data-subtab-panel="notes">
+          <div class="section-title"><h3>Field Scratchpad</h3><span class="source">Saves on this phone</span></div>
+          <textarea id="toolScratch" class="field-scratch" rows="9" placeholder="Measurements, spool notes, weld numbers, material counts, reminders…" oninput="toolSaveScratch()"></textarea>
+          <div class="actions"><button onclick="toolClearScratch()">CLEAR NOTES</button></div>
+        </div>
+      </section>
+      <section id="saddle" class="page">
+        <h2>Station / Ordinate Lines</h2>
+        <div class="section-subtabs" role="tablist" aria-label="Saddle views"><button class="on" data-subtab-button-group="saddle" data-subtab-button-panel="calculator" onclick="selectSectionTab('saddle','calculator',this)">BUILD SADDLE</button><button data-subtab-button-group="saddle" data-subtab-button-panel="marks" onclick="selectSectionTab('saddle','marks',this)">FORMULA + MARKS</button><button data-subtab-button-group="saddle" data-subtab-button-panel="reference" onclick="selectSectionTab('saddle','reference',this)">EXAMPLES / TOP VIEW</button></div>
+        <div class="card good help hidden" data-subtab-group="saddle" data-subtab-panel="reference">
+          <b>What you actually mark on the branch pipe:</b>
+          <ol>
+            <li>For a 90° saddle use a <b>square wraparound reference line</b>. For an angled saddle first lay out the <b>miter line at the complement: 90° − branch angle</b>.</li>
+            <li>
+              Draw one straight line down the branch. That is <b>Station 0</b>.
+            </li>
+            <li>
+              Wrap a tape around the pipe and mark equal stations using the
+              <b>station spacing</b>.
+            </li>
+            <li>
+              At each station, measure the listed distance
+              <b class="amber">FROM THE WRAP / MITER REFERENCE LINE</b>.
+            </li>
+            <li>Connect the marks smoothly. That is the saddle cut line.</li>
+          </ol>
+        </div>
+        <div class="card saddle-layout-card hidden" data-subtab-group="saddle" data-subtab-panel="reference">
+          <div class="section-title"><h3>How to Lay Out the Saddle</h3><span class="source">STATION / ORDINATE REFERENCE</span></div>
+          <img src="./resources/saddle-layout.jpeg" alt="Saddle layout reference with branch-pipe station and ordinate markings" style="display:block;width:100%;height:auto;margin:10px auto;border-radius:10px;border:1px solid #cbd5e1;background:#fff" onerror="this.style.display='none';document.getElementById('saddleFallbackGuide').style.display='grid'">
+          <div class="note-box"><b>Ordinate numbering around one full wrap — do not repeat the closing 0:</b><br>8 divisions: <b>0 1 2 3 4 3 2 1</b><br>16 divisions: <b>0 1 2 3 4 5 6 7 8 7 6 5 4 3 2 1</b></div>
+          <div id="saddleFallbackGuide" class="saddle-layout-views" style="display:none">
+            <div class="saddle-layout-panel">
+              <b>1 • END VIEW — MARK STATIONS AROUND THE PIPE</b>
+              <svg viewBox="0 0 300 260" role="img" aria-label="Branch pipe end view with equal saddle stations">
+                <circle cx="150" cy="132" r="88" class="saddle-end-circle"></circle>
+                <circle cx="150" cy="44" r="5" class="saddle-station-dot"></circle><text x="158" y="47">0</text>
+                <circle cx="212" cy="70" r="5" class="saddle-station-dot"></circle><text x="220" y="72">1</text>
+                <circle cx="238" cy="132" r="5" class="saddle-station-dot"></circle><text x="246" y="136">2</text>
+                <circle cx="212" cy="194" r="5" class="saddle-station-dot"></circle><text x="220" y="200">3</text>
+                <circle cx="150" cy="220" r="5" class="saddle-station-dot"></circle><text x="158" y="239">4</text>
+                <circle cx="88" cy="194" r="5" class="saddle-station-dot"></circle><text x="70" y="201">5</text>
+                <circle cx="62" cy="132" r="5" class="saddle-station-dot"></circle><text x="42" y="136">6</text>
+                <circle cx="88" cy="70" r="5" class="saddle-station-dot"></circle><text x="70" y="72">7</text>
+                <line x1="150" y1="36" x2="150" y2="228" class="saddle-station-zero"></line>
+                <text x="83" y="18">Station 0 chalk line</text>
+              </svg>
+            </div>
+            <div class="saddle-layout-panel">
+              <b>2 • IMAGINE THE PIPE UNWRAPPED FLAT</b>
+              <svg viewBox="0 0 430 260" role="img" aria-label="Unwrapped saddle layout showing mark back from square end">
+                <rect x="78" y="30" width="315" height="190" class="saddle-wrap-box"></rect>
+                <line x1="78" y1="25" x2="78" y2="225" class="saddle-square-end"></line>
+                <text x="20" y="20">SQUARE END / ZERO</text>
+                <line x1="92" y1="238" x2="360" y2="238" class="saddle-back-arrow"></line><polygon points="360,238 346,230 346,246" class="saddle-arrow-head"></polygon>
+                <text x="132" y="257">MARK BACK FROM END →</text>
+                <line x1="78" y1="54" x2="393" y2="54" class="saddle-row"></line><text x="42" y="58">0</text>
+                <line x1="78" y1="82" x2="393" y2="82" class="saddle-row"></line><text x="42" y="86">1</text>
+                <line x1="78" y1="110" x2="393" y2="110" class="saddle-row"></line><text x="42" y="114">2</text>
+                <line x1="78" y1="138" x2="393" y2="138" class="saddle-row"></line><text x="42" y="142">3</text>
+                <line x1="78" y1="166" x2="393" y2="166" class="saddle-row"></line><text x="42" y="170">4</text>
+                <line x1="78" y1="194" x2="393" y2="194" class="saddle-row"></line><text x="42" y="198">5</text>
+                <polyline points="111,54 135,82 181,110 238,138 308,166 358,194" class="saddle-cut-profile"></polyline>
+                <circle cx="111" cy="54" r="5" class="saddle-layout-mark"></circle><circle cx="135" cy="82" r="5" class="saddle-layout-mark"></circle><circle cx="181" cy="110" r="5" class="saddle-layout-mark"></circle><circle cx="238" cy="138" r="5" class="saddle-layout-mark"></circle><circle cx="308" cy="166" r="5" class="saddle-layout-mark"></circle><circle cx="358" cy="194" r="5" class="saddle-layout-mark"></circle>
+              </svg>
+            </div>
+          </div>
+          <div class="note-box muted"><b>What the table means:</b> follow the mirrored ordinate numbers around the branch. The last physical mark closes back onto the same Station 0 line, so the sequence ends at 1 instead of printing a second 0. For a 90° saddle measure from the square wrap line; for an angled saddle measure from the miter line. Connect the ordinate marks smoothly.</div>
+          <div id="saddleTopView" class="saddle-top-view" aria-live="polite"></div>
+        </div>
+        <div class="card" data-subtab-group="saddle" data-subtab-panel="calculator">
+          <div class="section-title"><h3>Choose Saddle Type by Picture</h3><span class="source">Tap the shape that matches the field layout</span></div>
+          <div class="saddle-type-picker">
+            <button type="button" class="saddle-type-card active" data-saddle-type="CENTERED_90" onclick="selectSaddleType('CENTERED_90')"><img src="./resources/saddle-layout.jpeg" alt="90 degree centered saddle reference" loading="lazy"><b>90° Centered</b><span>Straight branch centered on the run.</span></button>
+            <button type="button" class="saddle-type-card" data-saddle-type="CENTERED_ANY" onclick="selectSaddleType('CENTERED_ANY')"><img src="./resources/intersection-any-degree.jpeg" alt="Intersection at any degree saddle reference" loading="lazy" onerror="this.onerror=null;this.src='./resources/saddle-layout.jpeg'"><b>Intersection at Any Degree</b><span>Branch intersects the run at the angle you enter.</span></button>
+            <button type="button" class="saddle-type-card" data-saddle-type="ECCENTRIC_45" onclick="selectSaddleType('ECCENTRIC_45')"><img src="./resources/90-degree-eccentric-pipe-riser.jpeg" alt="90 degree eccentric pipe riser saddle reference" loading="lazy" onerror="this.onerror=null;this.src='./resources/saddle-layout.jpeg'"><b>90° Eccentric Pipe Riser</b><span>90° riser offset to the tangent side of the header.</span></button>
+
+            <button type="button" class="saddle-type-card" data-saddle-type="ELBOW_BACK_90" onclick="selectSaddleType('ELBOW_BACK_90')"><img src="./resources/concentric-riser-back-elbow.jpeg" alt="Concentric riser on back of elbow reference" loading="lazy" onerror="this.onerror=null;this.src='./resources/saddle-layout.jpeg'"><b>Concentric Riser on Back of Elbow</b><span>Riser comes radially off the outside/back of a 90° elbow.</span></button>
+            <button type="button" class="saddle-type-card" data-saddle-type="ELBOW_BACK_ANY" onclick="selectSaddleType('ELBOW_BACK_ANY')"><img src="./resources/concentric-riser-back-elbow.jpeg" alt="Angled riser on back of elbow reference" loading="lazy" onerror="this.onerror=null;this.src='./resources/saddle-layout.jpeg'"><b>Angled Riser on Back of Elbow</b><span>Same elbow-back layout family; enter the branch angle you need.</span></button>
+          </div>
+          <div class="grid">
+            <label>Run pipe NPS<select id="run"></select></label
+            ><label>Branch pipe NPS<select id="branch"></select></label
+            ><label>Saddle type<select id="sadType" onchange="saddleTypeChanged()"><option value="CENTERED_90" selected>90° Centered Saddle</option><option value="CENTERED_ANY">Intersection at Any Degree</option><option value="ECCENTRIC_45">90° Eccentric Pipe Riser</option><option value="ELBOW_BACK_90">Concentric Riser on Back of Elbow</option><option value="ELBOW_BACK_ANY">Angled Riser on Back of Elbow</option></select></label><label>Branch angle (degrees)<input id="sang" type="number" inputmode="decimal" min="0.1" max="90" step="0.1" value="90" disabled></label><label id="sadElbowWrap" class="hidden">90° elbow used (Run NPS = elbow size)<select id="sadElbowType" onchange="saddleElbowTypeChanged()"><option value="LR90" selected>Long-radius 90 — loaded CLR</option><option value="SR90">Short-radius 90 — loaded CLR</option><option value="CUSTOM">Custom / field-measured CLR</option></select></label><label id="sadElbowClrWrap" class="hidden">Custom 90° elbow CLR<input id="sadElbowClr" value='6&quot;'></label><label>Ordinate divisions<select id="divs"><option>8</option><option selected>16</option></select></label
+            ><label
+              >Extra cutback allowance<input
+                id="gap"
+                type="number"
+                value="0"
+                step=".01"
+                min="0"
+            /></label>
+          </div>
+          <button class="primary" onclick="saddleBuildAndShowMarks()">BUILD MARKS</button>
+        </div>
+        <div class="card hidden" data-subtab-group="saddle" data-subtab-panel="marks">
+          <div class="section-title"><h3>Formula + Ordinate Marks</h3><span class="source">Calculated from the saddle type you selected</span></div>
+          <div id="sadSummary" class="result"></div>
+          <div id="orientNote" class="station-card"></div>
+          <div id="chart"></div>
+          <div class="table">
+            <table class="saddle-table">
+              <thead>
+                <tr>
+                  <th>Wrap point</th>
+                  <th>Ordinate line</th>
+                  <th>Degrees</th>
+                  <th>Around from 0</th>
+                  <th id="sadMarkHeader">MEASURE BACK FROM WRAP LINE</th>
+                </tr>
+              </thead>
+              <tbody id="sadBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card warn hidden" data-subtab-group="saddle" data-subtab-panel="marks">
+          Field check the pattern before final cutting.
+        </div>
+      </section>
+      <section id="takeoffs" class="page">
+        <h2>Fitting Takeoffs</h2>
+        <div class="section-subtabs" role="tablist" aria-label="Takeoff categories"><button class="on" data-subtab-button-group="takeoffs" data-subtab-button-panel="bw" onclick="selectSectionTab('takeoffs','bw',this)">BUTT-WELD</button><button data-subtab-button-group="takeoffs" data-subtab-button-panel="sw" onclick="selectSectionTab('takeoffs','sw',this)">SOCKET-WELD</button><button data-subtab-button-group="takeoffs" data-subtab-button-panel="thread" onclick="selectSectionTab('takeoffs','thread',this)">THREADED</button><button data-subtab-button-group="takeoffs" data-subtab-button-panel="groove" onclick="selectSectionTab('takeoffs','groove',this)">GROOVED</button><button data-subtab-button-group="takeoffs" data-subtab-button-panel="custom" onclick="selectSectionTab('takeoffs','custom',this)">CUSTOM / VALVE</button></div>
+        <div class="card" id="bwTakeoffCard" data-subtab-group="takeoffs" data-subtab-panel="bw">
+          <div class="section-title">
+            <h3>Butt-Weld Fittings</h3>
+            <span class="source">ASME B16.9 dimensional family</span>
+          </div>
+          <div class="grid">
+            <label
+              >Fitting<select id="bwtype" onchange="bwTypeChanged()">
+                <option value="LR90">90° Long Radius Elbow</option>
+                <option value="SR90">90° Short Radius Elbow</option>
+                <option value="LR45">45° Long Radius Elbow</option>
+                <option value="TEE">Straight Tee</option>
+                <option value="RED">Concentric / Eccentric Reducer</option>
+              </select></label
+            ><label
+              >Nominal size<select
+                id="bwsize"
+                onchange="bwSizeChanged()"
+              ></select></label
+            ><label id="bwsmallWrap" class="hidden"
+              >Reducer small end<select
+                id="bwsmall"
+                onchange="bwCalc()"
+              ></select
+            ></label>
+          </div>
+          <button class="primary" onclick="bwCalc()">GET WELD TAKEOFF</button>
+          <div id="bwOut" class="result"></div>
+        </div>
+        <div class="card hidden" id="swTakeoffCard" data-subtab-group="takeoffs" data-subtab-panel="sw">
+          <div class="section-title">
+            <h3>Socket-Weld Fittings</h3>
+            <span class="source">ASME B16.11 dimensional family</span>
+          </div>
+          <div class="grid">
+            <label>Fitting<select id="swt" onchange="socketCalc()"></select></label>
+            <label>Size<select id="sws" onchange="socketCalc()"></select></label>
+            <label>Class<select id="swclass" onchange="socketCalc()"><option value="3000">3000</option><option value="6000">6000</option><option value="9000">9000</option></select></label>
+          </div>
+          <button class="primary" onclick="socketCalc()">CHECK SOCKET TAKEOFF</button>
+          <div id="swOut" class="result"></div>
+        </div>
+        <div class="card hidden" id="threadTakeoffCard" data-subtab-group="takeoffs" data-subtab-panel="thread">
+          <div class="section-title">
+            <h3>Threaded Fittings</h3>
+            <span class="source">Ward Class 150 where loaded • other patterns are maker-specific</span>
+          </div>
+          <div class="grid">
+            <label>Fitting<select id="wt" onchange="threadedTypeChanged()"></select></label>
+            <label>Size<select id="ws" onchange="wardCalc()"></select></label>
+          </div>
+          <button class="primary" onclick="wardCalc()">GET THREADED TAKEOUT</button>
+          <div id="wardOut" class="result"></div>
+        </div>
+        <div class="card hidden" id="groovedTakeoffCard" data-subtab-group="takeoffs" data-subtab-panel="groove">
+          <div class="section-title">
+            <h3>Grooved Fittings</h3>
+            <span class="source">Victaulic / Gruvlok catalog center-to-end</span>
+          </div>
+          <div class="grid">
+            <label>Brand<select id="grBrand" onchange="grooveBrandChanged()"><option value="victaulic">Victaulic</option><option value="gruvlok">Gruvlok</option></select></label>
+            <label>Fitting<select id="grFit" onchange="grooveFitChanged()"></select></label>
+            <label>Size<select id="grSize" onchange="grooveCalc()"></select></label>
+          </div>
+          <button class="primary" onclick="grooveCalc()">GET GROOVE TAKEOFF</button>
+          <div id="grOut" class="result"></div>
+        </div>
+        <div class="card warn hidden" data-subtab-group="takeoffs" data-subtab-panel="custom">
+          Valve face-to-face dimensions vary by valve type, pressure class, end
+          connection, and manufacturer.
+        </div>
+        <div class="card hidden" id="customTakeoffCard" data-subtab-group="takeoffs" data-subtab-panel="custom">
+          <h3>Save Your Fitting / Valve Takeoff</h3>
+          <div class="grid">
+            <label>Type<input id="ctype" /></label
+            ><label>Size<input id="csize" /></label
+            ><label>Dimension<input id="cdim" /></label
+            ><label>Class / maker<input id="cmaker" /></label>
+          </div>
+          <button class="primary" onclick="saveTake()">SAVE</button>
+          <div id="takeList"></div>
+        </div>
+      </section>
+      <section id="iso" class="page">
+        <h2>Professional ISO / Spool Drawing</h2>
+        <div class="card iso-sheet">
+          <div class="iso-print-title"><span>PIPE SPOOL ISOMETRIC / PLAN / ELEVATION</span><small>TAP GRID POINTS TO DRAW • ZOOM • STAMP SYMBOLS</small></div>
+          <details class="iso-job-details" open>
+            <summary>JOB / SPOOL INFO — TAP TO COLLAPSE</summary>
+            <div class="iso-title-block">
+            <label>ISO / Spool No.<input id="isoNumber" placeholder="SP-001" oninput="isoSaveMeta()"></label>
+            <label>Line No.<input id="isoLine" placeholder="LINE-100" oninput="isoSaveMeta()"></label>
+            <label>Service<input id="isoService" placeholder="CHW / STEAM / AIR" oninput="isoSaveMeta()"></label>
+            <label>Main size<input id="isoMainSize" placeholder='4&quot;' oninput="isoSaveMeta()"></label>
+            <label>Material<input id="isoMaterial" placeholder="Carbon steel / SS / PVC" oninput="isoSaveMeta()"></label>
+            </div>
+          </details>
+          <div class="iso-sketch-head"><div><b id="isoGridViewTitle">ISO GRID</b><div id="isoActiveInfo" class="iso-active-info"></div></div><div id="isoActiveLabel" class="iso-active-badge">No active leg</div></div>
+          <div class="iso-active-controls"><div id="isoActiveStatus" class="iso-active-status">Use the grid for fast sketching. Use Spool Legs below for exact C-C and cut lengths.</div><div class="iso-active-buttons"><button id="isoEditButton" onclick="isoEditActive()" disabled>EDIT LEG</button><button id="isoCompleteButton" class="primary" onclick="isoToggleComplete()" disabled>MARK LEG COMPLETE</button></div></div>
+          <div class="iso-grid-help"><b>One shared drawing:</b> draw or edit in ISO, Plan, or Elevation and the other two views convert automatically from the same pipe and fitting geometry. Finger taps always land on the nearest grid point. <b>Hold and drag either amber end handle</b> to shorten, lengthen, or change the slope. Corners stay pipe-only until you add a fitting yourself.</div>
+          <div class="iso-view-switch-wrap">
+            <div><b>DRAWING VIEW — AUTO CONVERT</b><span>One shared drawing. Switch views and the pipe, fittings, dimensions, and edits convert automatically.</span></div>
+            <div class="iso-view-switch">
+              <button class="iso-view-button on" data-iso-view="ISO" onclick="isoSetView('ISO')">ISO VIEW</button>
+              <button class="iso-view-button" data-iso-view="PLAN" onclick="isoSetView('PLAN')">PLAN VIEW</button>
+              <button class="iso-view-button" data-iso-view="ELEVATION" onclick="isoSetView('ELEVATION')">ELEVATION</button>
+            </div>
+          </div>
+          <div class="iso-grid-toolbar">
+            <button onclick="isoGridZoomBy(-0.2)">ZOOM −</button><button onclick="isoGridZoomBy(0.2)">ZOOM +</button><button id="isoGridToggle" class="iso-toggle-button on" onclick="isoGridToggleGrid()">GRID ON</button><button id="isoMeasureToggle" class="iso-toggle-button on" onclick="isoGridToggleMeasurements()">MEASURE AUTO</button><button id="isoSnapToggle" class="iso-toggle-button on" onclick="isoGridToggleSnap()">SNAP ON</button><button class="north-arrow-button" onclick="isoGridSelectNorthArrow()">NORTH ARROW</button><button onclick="isoGridNewRun()">NEW RUN</button><button onclick="isoGridUndo()">UNDO</button><button onclick="isoGridClear()">CLEAR DRAWING</button><button class="photo-button" onclick="document.getElementById('isoPhotoInput').click()">CHOOSE EXISTING PHOTO</button><button class="photo-button" onclick="document.getElementById('isoCameraInput').click()">TAKE PHOTO</button><button id="isoPhotoToggle" onclick="isoGridTogglePhoto()">HIDE PHOTO</button><button onclick="isoGridClearPhoto()">CLEAR PHOTO</button><button class="save-image-button" onclick="isoGridSaveToPhotos()">SAVE / SHARE DRAWING</button><input id="isoPhotoInput" type="file" accept="image/*,.heic,.heif" hidden onchange="isoGridLoadFieldPhoto(this)"><input id="isoCameraInput" type="file" accept="image/*" capture="environment" hidden onchange="isoGridLoadFieldPhoto(this)">
+          </div>
+          <div class="iso-grid-settings"><label>Sketch scale per small grid<select id="isoGridScale"><option value="6">6 in</option><option value="12" selected>12 in / 1 ft</option><option value="24">24 in / 2 ft</option></select></label><label>Field photo opacity<input id="isoPhotoOpacity" type="range" min="0.15" max="0.9" step="0.05" value="0.5" oninput="isoGridSetPhotoOpacity(this.value)"></label><div id="isoGridStatus" class="iso-grid-status">Tap the first grid point to start a pipe run.</div></div>
+          <div id="isoPhotoName" class="iso-photo-status">No field photo loaded. The photo stays on this phone/browser session and is not uploaded.</div>
+          <div class="iso-tap-shell">
+            <div id="isoTapViewport" class="iso-tap-viewport"><div id="isoTapScene" class="iso-tap-scene"><img id="isoFieldPhoto" class="iso-field-photo hidden" alt="Field piping photo underlay"><div class="iso-photo-grid-overlay"></div><svg id="isoTapSvg" class="iso-tap-svg" viewBox="0 0 1200 900" aria-label="Tap grid pipe drawing"></svg></div></div>
+            <div id="isoDrawingQuickBar" class="iso-drawing-quick-bar hidden" role="toolbar" aria-live="polite">
+              <div class="iso-drawing-quick-head"><b id="isoQuickTitle">Selected item</b><span id="isoQuickHint">Edit it without leaving the drawing.</span></div>
+              <div id="isoQuickPipeControls" class="iso-drawing-quick-row">
+                <label>PIPE DIM<select id="isoQuickDimensionType" onchange="isoGridQuickDimensionTypeChanged(this.value)"><option value="C-C">C-C</option><option value="E-E">E-E</option><option value="C-F">C-F</option><option value="F-F">F-F</option><option value="C-E">C-E</option></select></label>
+                <button type="button" id="isoQuickMeasureButton" class="primary" onclick="isoGridQuickEditMeasurement()">PIPE MEASURE</button>
+                <button type="button" id="isoQuickRiseButton" onclick="isoGridQuickEditRiseMeasurement()">RISE: SET</button>
+                <button type="button" id="isoQuickRunButton" onclick="isoGridQuickEditRunMeasurement()">RUN: SET</button>
+              </div>
+              <div id="isoQuickFittingControls" class="iso-drawing-quick-row hidden"><button onclick="isoGridRotateSelected(-15)">↺ 15°</button><button onclick="isoGridRotateSelected(15)">15° ↻</button><button onclick="isoGridRotateSelected(90)">ROTATE 90°</button><button id="isoQuickSnapButton" onclick="isoGridSnapSelectedSymbol()">SNAP TO PIPE</button></div>
+            </div>
+          </div>
+          <div class="iso-symbol-legend"><b>Pipe first, fittings second:</b> every ISO pipe segment creates a matching Spool Leg, but elbows and fittings are never added automatically. Use the single fitting tray below when you need a symbol. Moving a fitting does not move the pipe.</div>
+          <details class="iso-fitting-tray" open><summary>FITTINGS / SYMBOLS — ONE TRAY</summary><div class="iso-stamp-toolbar"><button class="on" data-iso-stamp="LINE" onclick="isoGridSetMode('LINE',this)">PIPE LINE</button><button data-iso-stamp="ELBOW90" onclick="isoGridSetMode('ELBOW90',this)">90 ELBOW</button><button data-iso-stamp="ELBOW45" onclick="isoGridSetMode('ELBOW45',this)">45 ELBOW</button><button data-iso-stamp="TEE" onclick="isoGridSetMode('TEE',this)">TEE</button><button data-iso-stamp="TEE_UP" onclick="isoGridSetMode('TEE_UP',this)">TEE LOOK UP</button><button data-iso-stamp="TEE_DOWN" onclick="isoGridSetMode('TEE_DOWN',this)">TEE LOOK DOWN</button><button data-iso-stamp="STUB_IN" onclick="isoGridSetMode('STUB_IN',this)">STUB-IN</button><button data-iso-stamp="OLET" onclick="isoGridSetMode('OLET',this)">OLET</button><button data-iso-stamp="CONC_REDUCER" onclick="isoGridSetMode('CONC_REDUCER',this)">CONC RED</button><button data-iso-stamp="ECC_REDUCER" onclick="isoGridSetMode('ECC_REDUCER',this)">ECC RED</button><button data-iso-stamp="WN_FLANGE" onclick="isoGridSetMode('WN_FLANGE',this)">WN FLANGE</button><button data-iso-stamp="SO_FLANGE" onclick="isoGridSetMode('SO_FLANGE',this)">SLIP-ON FLG</button><button data-iso-stamp="SW_FLANGE" onclick="isoGridSetMode('SW_FLANGE',this)">SW FLANGE</button><button data-iso-stamp="BLIND_FLANGE" onclick="isoGridSetMode('BLIND_FLANGE',this)">BLIND FLG</button><button data-iso-stamp="UNION" onclick="isoGridSetMode('UNION',this)">UNION</button><button data-iso-stamp="GATE" onclick="isoGridSetMode('GATE',this)">GATE</button><button data-iso-stamp="GLOBE" onclick="isoGridSetMode('GLOBE',this)">GLOBE</button><button data-iso-stamp="PLUG" onclick="isoGridSetMode('PLUG',this)">PLUG</button><button data-iso-stamp="CHECK" onclick="isoGridSetMode('CHECK',this)">CHECK</button><button data-iso-stamp="BALL" onclick="isoGridSetMode('BALL',this)">BALL</button><button data-iso-stamp="BUTTERFLY" onclick="isoGridSetMode('BUTTERFLY',this)">BUTTERFLY</button><button data-iso-stamp="NEEDLE" onclick="isoGridSetMode('NEEDLE',this)">NEEDLE</button><button data-iso-stamp="STRAINER" onclick="isoGridSetMode('STRAINER',this)">STRAINER</button><button data-iso-stamp="CAP" onclick="isoGridSetMode('CAP',this)">CAP</button><button data-iso-stamp="FLOW" onclick="isoGridSetMode('FLOW',this)">FLOW</button><button data-iso-stamp="SLOPE" onclick="isoGridSetMode('SLOPE',this)">SLOPE</button><button data-iso-stamp="LEVEL_REF" onclick="isoGridSetMode('LEVEL_REF',this)">LEVEL REF</button></div></details>
+          <div class="iso-grid-edit-panel">
+            <div class="section-title"><h3>Selected Pipe / Fitting</h3><span id="isoGridSelectionInfo" class="source">Tap a pipe section or fitting.</span></div>
+            <div class="grid">
+              <label>Pipe dimension type<select id="isoGridDimensionType"><option value="C-C">C-C — Center to Center</option><option value="E-E">E-E — End to End</option><option value="C-F">C-F — Center to Flange Face</option><option value="F-F">F-F — Flange Face to Flange Face</option><option value="C-E">C-E — Center to End</option></select></label>
+              <label>Pipe / travel measurement<input id="isoGridMeasure" placeholder="Example: 5' 6\"" onclick="openMeasurePad('isoGridMeasure','Selected pipe travel')"></label>
+              <label>Offset rise<input id="isoGridRiseMeasure" placeholder="Example: 3' 4\"" onclick="openMeasurePad('isoGridRiseMeasure','offset rise')"></label>
+              <label>Offset run / horizontal<input id="isoGridRunMeasure" placeholder="Example: 5'" onclick="openMeasurePad('isoGridRunMeasure','offset run')"></label>
+              <label>Section note<input id="isoGridNote" placeholder="Field fit / weld / tie-in / elevation"></label>
+            </div>
+            <div class="actions iso-grid-edit-actions"><button class="primary" onclick="openMeasurePad('isoGridMeasure','Selected pipe section')">ADD / EDIT MEASUREMENT</button><button onclick="isoGridSaveSegmentInfo()">SAVE SECTION INFO</button><button onclick="isoGridToggleSegmentComplete()">TOGGLE COMPLETE</button><button onclick="isoGridDeleteSelectedSegment()">DELETE SECTION</button></div>
+            <div class="note-box muted">Normal pipe stays on the standard ISO diagonal and vertical axes. For an offset, rough in the direction and enter RISE and RUN. The offset leaves the normal grid plane and falls between the nearest diagonal and vertical axes. Equal RISE and RUN produces the halfway 45° plane; other calculated angles stay between those axes. Offset travel is drawn to the same visual measurement scale as the rest of the pipe, and no compass-direction label is added.</div>
+          </div>
+
+          <details class="iso-symbol-help"><summary>PIPE SYMBOL LEGEND / ASSISTANCE</summary><div class="iso-grid-symbol-note"><b>Chart-style symbols:</b> elbows, standard tee, tee looking up, tee looking down, stub-in, olet, reducers, flanges, union, valves, strainer, cap, flow, slope and level reference. Choose one from the single fitting tray, tap to stamp it, then drag on the grid or rotate it. Use ROTATE 90° for sideways orientation.</div></details>
+          <div id="isoSketchWrap" class="iso-legacy-sketch-wrap"><div id="isoSketch" class="iso-sketch"></div></div>
+          <div class="iso-print-notes"><label>ISO NOTES<textarea id="isoNotes" rows="5" placeholder="Field notes, elevations, tie-in notes, weld numbers, supports, material notes…" oninput="isoSaveMeta()"></textarea></label></div>
+        </div>
+        <div class="card">
+          <div class="section-title">
+            <h3>Spool Legs — Auto from ISO Grid</h3>
+            <button onclick="isoAddLeg()">+ ADD LEG</button>
+          </div>
+          <div id="isoLegs"></div>
+          <div class="actions">
+            <button class="primary" onclick="isoCalcAll()">CALCULATE CUT LIST</button>
+            <button onclick="isoClear()">CLEAR</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>ISO Cut List</h3>
+          <div id="isoSummary" class="result">Add a leg and calculate the spool.</div>
+          <div class="table">
+            <table>
+              <thead><tr><th>Leg</th><th>Type</th><th>Size</th><th>C-C</th><th>Fitting A</th><th>Fitting B</th><th>Cut Length</th><th>Status</th></tr></thead>
+              <tbody id="isoCutBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card warn">
+          <b>Loaded data:</b> welded fitting takeoffs use the app's ASME B16.9 dimensional table. Screw fitting takeouts use the loaded Ward Class 150 starter table and are manufacturer-specific. Use CUSTOM for valves, different manufacturers, or any fitting/size not loaded. Verify shop/project requirements before cutting.
+        </div>
+      </section>
+      <section id="fusion" class="page"><h2>Fusion Pipe</h2><div class="section-subtabs" role="tablist" aria-label="Fusion pipe categories"><button class="on" data-subtab-button-group="fusion" data-subtab-button-panel="aqsocket" onclick="selectSectionTab('fusion','aqsocket',this)">AQUATHERM SOCKET</button><button data-subtab-button-group="fusion" data-subtab-button-panel="nupisocket" onclick="selectSectionTab('fusion','nupisocket',this)">NUPI / NIRON SOCKET</button><button data-subtab-button-group="fusion" data-subtab-button-panel="ppbutt" onclick="selectSectionTab('fusion','ppbutt',this)">PP BUTT</button><button data-subtab-button-group="fusion" data-subtab-button-panel="hdpebutt" onclick="selectSectionTab('fusion','hdpebutt',this)">HDPE BUTT</button><button data-subtab-button-group="fusion" data-subtab-button-panel="hdpesocket" onclick="selectSectionTab('fusion','hdpesocket',this)">HDPE SOCKET</button></div><div class="card warn"><b>Field reference — verify the qualified procedure:</b> heater temperature, timing, pressure and cooling can change with material, SDR/DR, machine and project specification. Manufacturer instructions and the job-qualified fusion procedure always control. Socket “takeoff” below is pipe insertion / engagement depth; fitting center-to-end dimensions remain product-specific.</div><div id="fusionTimerBar" class="fusion-timer hidden" role="status"></div><div class="card" data-subtab-group="fusion" data-subtab-panel="aqsocket"><div class="section-title"><h3>Aquatherm Socket Fusion</h3><span class="source">2024 Aquatherm Installer Manual</span></div><div class="grid"><label>Size<select id="aqFusionSize" onchange="aqFusionCalc()"></select></label><label>Ambient<select id="aqFusionAmbient" onchange="aqFusionCalc()"><option value="warm">40°F and above</option><option value="cold">Below 40°F</option></select></label></div><div id="aqFusionOut" class="result"></div></div><div class="card hidden" data-subtab-group="fusion" data-subtab-panel="nupisocket"><div class="section-title"><h3>NUPI / NIRON Socket Fusion</h3><span class="source">2022 NIRON Design & Installation Manual</span></div><div class="grid"><label>Size<select id="nupiFusionSize" onchange="nupiFusionCalc()"></select></label><label>Wall family<select id="nupiFusionSdr" onchange="nupiFusionCalc()"><option value="standard">SDR 11 / 9 / 7.3</option><option value="sdr17">SDR 17</option></select></label></div><div id="nupiFusionOut" class="result"></div></div><div class="card hidden" data-subtab-group="fusion" data-subtab-panel="ppbutt"><div class="section-title"><h3>PP Butt Fusion</h3><span class="source">Aquatherm / NUPI procedure reference</span></div><div class="grid"><label>Manufacturer<select id="ppButtMaker" onchange="ppButtMakerChanged()"><option value="aquatherm">Aquatherm PP-R / PP-RCT</option><option value="nupi">NUPI / NIRON PP-R</option></select></label><label>Wall thickness<select id="ppButtWall" onchange="ppButtCalc()"></select></label><label id="ppButtAmbientWrap">Ambient<select id="ppButtAmbient" onchange="ppButtCalc()"><option value="cool">60°F and below</option><option value="normal" selected>60–80°F</option><option value="hot">Above 80°F</option></select></label></div><div id="ppButtOut" class="result"></div></div><div class="card hidden" data-subtab-group="fusion" data-subtab-panel="hdpebutt"><div class="section-title"><h3>HDPE Butt Fusion</h3><span class="source">PPI TR-33 / ASTM F2620 reference</span></div><div class="grid"><label>Actual pipe OD (in)<input id="hdpeButtOD" inputmode="decimal" value="8.625" oninput="hdpeButtCalc()"></label><label>DR<input id="hdpeButtDR" inputmode="decimal" value="11" oninput="hdpeButtCalc()"></label><label>Interfacial pressure (psi)<input id="hdpeButtIFP" inputmode="decimal" value="75" oninput="hdpeButtCalc()"></label><label>Machine TEPA (in², optional)<input id="hdpeButtTEPA" inputmode="decimal" placeholder="piston area" oninput="hdpeButtCalc()"></label><label>Drag pressure (psi)<input id="hdpeButtDrag" inputmode="decimal" value="0" oninput="hdpeButtCalc()"></label></div><div id="hdpeButtOut" class="result"></div></div><div class="card hidden" data-subtab-group="fusion" data-subtab-panel="hdpesocket"><div class="section-title"><h3>HDPE Socket Fusion</h3><span class="source">ASTM F1056 / Performance Pipe reference</span></div><div class="grid"><label>Size<select id="hdpeSocketSize" onchange="hdpeSocketCalc()"></select></label><label>Material family<select id="hdpeSocketResin" onchange="hdpeSocketCalc()"><option value="4710">PE3408 / PE3608 / PE4710</option><option value="2708">PE2406 / PE2708</option></select></label></div><div id="hdpeSocketOut" class="result"></div></div></section>
+      <section id="tubing" class="page"><h2>Tubing</h2><div class="card good"><b>Field guide:</b> Lay out tubing from finished points and the actual bender's centerline radius (CLR). Tube OD, wall/material, tooling, springback, and the bender's own mark/arrow conventions control the finished result. Make a test bend when the tooling is unfamiliar.</div><div class="section-subtabs" role="tablist" aria-label="Tubing guide categories"><button class="on" data-subtab-button-group="tubing" data-subtab-button-panel="layout" onclick="selectSectionTab('tubing','layout',this)">LAYOUT</button><button data-subtab-button-group="tubing" data-subtab-button-panel="offset" onclick="selectSectionTab('tubing','offset',this)">OFFSET</button><button data-subtab-button-group="tubing" data-subtab-button-panel="rotation" onclick="selectSectionTab('tubing','rotation',this)">ROTATION</button><button data-subtab-button-group="tubing" data-subtab-button-panel="sag" onclick="selectSectionTab('tubing','sag',this); tubeSagCalc()">SAG METHOD</button><button data-subtab-button-group="tubing" data-subtab-button-panel="design" onclick="selectSectionTab('tubing','design',this)">BEND DESIGN</button><button data-subtab-button-group="tubing" data-subtab-button-panel="fieldmath" onclick="selectSectionTab('tubing','fieldmath',this)">FIELD MATH</button><button data-subtab-button-group="tubing" data-subtab-button-panel="photos" onclick="selectSectionTab('tubing','photos',this)">PHOTO REFS</button></div><div class="card" data-subtab-group="tubing" data-subtab-panel="layout"><div class="section-title"><h3>Bend layout from finished points</h3><span class="source">CENTERLINE METHOD</span></div><div class="tube-visual-card"><div class="tube-visual-title">90° bend — read this picture from left to right</div><svg class="tube-diagram tube-diagram-clear" viewBox="0 0 640 330" role="img" aria-label="Clear 90 degree tube bend diagram showing datum end, theoretical corner, tangent points, centerline radius and finished legs"><defs><marker id="tubeArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="tube-arrow-head"/></marker></defs><path d="M55 245 H315 Q435 245 435 125 V55" class="tube-line"/><line x1="315" y1="245" x2="435" y2="245" class="tube-construction"/><line x1="435" y1="245" x2="435" y2="125" class="tube-construction"/><circle cx="435" cy="245" r="7" class="tube-corner-mark"/><circle cx="315" cy="245" r="7" class="tube-mark"/><circle cx="435" cy="125" r="7" class="tube-mark"/><line x1="435" y1="245" x2="350" y2="160" class="tube-radius-line" marker-end="url(#tubeArrow)"/><line x1="55" y1="282" x2="315" y2="282" class="tube-dim"/><line x1="315" y1="282" x2="435" y2="282" class="tube-dim"/><text x="55" y="310">DATUM END</text><text x="182" y="274">finished straight leg</text><text x="325" y="310">SETBACK</text><text x="447" y="250">C = theoretical corner</text><text x="274" y="232">T1 start tangent</text><text x="447" y="120">T2 end tangent</text><text x="344" y="154">CLR</text><text x="456" y="78">finished leg</text><path d="M375 205 A60 60 0 0 1 420 160" class="tube-angle-arc"/><text x="389" y="188">90°</text></svg><div class="tube-legend"><span><i class="dot tangent"></i>T1/T2 = where straight tube becomes the bend</span><span><i class="dot corner"></i>C = imaginary corner if both straight centerlines were extended</span><span><i class="line radius"></i>CLR = radius from bend center to tube centerline</span></div><div class="tube-read-order"><b>Use it:</b> measure the finished point to C → calculate setback → locate T1/T2 → convert that geometry to the actual bender's start/arrow mark.</div></div><ol class="tube-steps"><li>Start with the required <b>finished centerline points</b>: where each straight leg must end or intersect if extended.</li><li>Choose the actual bender/die and its CLR. For a bend angle θ, the centerline arc length (bend allowance) is <b>BA = CLR × θ in radians = π × CLR × θ / 180</b>.</li><li>For a simple bend between two intersecting straight centerlines, the tangent setback from the theoretical intersection is <b>SB = CLR × tan(θ/2)</b>. Mark the tangent locations on both legs.</li><li>Convert the geometry mark to the bender's required start/arrow mark. Do not assume every hand, ratchet, rotary-draw, or hydraulic bender uses the same arrow location or gain/deduction.</li><li>Keep one datum end whenever possible. Measure every later finished point from that datum instead of chaining mark-to-mark; this prevents small errors from accumulating.</li><li>After bending, verify leg length, angle, plane and tangent location before making the next bend. Correct the layout for measured springback/tooling behavior rather than blindly adding error to the next mark.</li></ol><div class="field-calc-grid"><label>Centerline radius, CLR (in)<input id="tubeClr" inputmode="decimal" value="3" oninput="tubeBendCalc()"></label><label>Bend angle (degrees)<input id="tubeAngle" inputmode="decimal" value="90" min="0" max="180" oninput="tubeBendCalc()"></label></div><div id="tubeBendResult" class="result field-calc-result"></div><div class="note-box muted"><b>Bend allowance vs setback vs gain:</b> bend allowance is the length along the tube centerline consumed by the curved arc. Setback is the straight-line distance from the theoretical centerline intersection to a tangent point. “Gain,” “deduct,” and arrow/start-mark offsets are bender/layout-system terms and can depend on the tool—use the bender's verified data rather than treating them as universal constants.</div></div><div class="card hidden" data-subtab-group="tubing" data-subtab-panel="offset"><div class="section-title"><h3>Two-bend offset</h3><span class="source">PARALLEL LEGS</span></div><svg class="tube-diagram" viewBox="0 0 560 210"><path d="M40 165 H180 L360 65 H520" class="tube-line"/><line x1="190" y1="165" x2="190" y2="65" class="tube-dim"/><text x="105" y="155">1st bend</text><text x="375" y="55">2nd bend</text><text x="200" y="115">offset</text></svg><p>For two equal bends that leave the entering and exiting tube parallel, using bend angle θ measured from the original straight direction: <b>travel between corresponding bend points = offset ÷ sin θ</b>. The straight advance/run is <b>offset ÷ tan θ</b>. This is centerline geometry; the exact marks placed on the tube still depend on the bender's mark convention and CLR.</p><div class="field-calc-grid"><label>Required offset (in)<input id="tubeOffset" inputmode="decimal" value="6" oninput="tubeOffsetCalc()"></label><label>Bend angle (degrees)<select id="tubeOffsetAngle" onchange="tubeOffsetCalc()"><option>15</option><option>22.5</option><option selected>30</option><option>45</option><option>60</option></select></label></div><div id="tubeOffsetResult" class="result field-calc-result"></div><h4>Multi-bend layout</h4><ol class="tube-steps"><li>Draw or sketch the finished centerline and number bends from the datum end.</li><li>Calculate every finished tangent/intersection location before touching the tube.</li><li>Write the bend angle and rotation/clock position beside every mark.</li><li>Make bend 1, return to the datum, re-measure the next finished location, orient the plane, then make bend 2. Repeat from the same datum.</li><li>When a previous bend prevents a direct tape pull, transfer the datum with a straightedge, square, laser, fixture, or known reference—not by estimating from the last bend.</li></ol></div><div class="card hidden" data-subtab-group="tubing" data-subtab-panel="rotation"><div class="section-title"><h3>Bend plane, orientation & rotation</h3><span class="source">CLOCK THE TUBE BEFORE BENDING</span></div><svg class="tube-diagram" viewBox="0 0 560 235"><circle cx="170" cy="115" r="76" class="tube-ring"/><line x1="170" y1="115" x2="170" y2="39" class="tube-dim"/><line x1="170" y1="115" x2="236" y2="77" class="tube-line-thin"/><text x="154" y="25">12</text><text x="249" y="120">3</text><text x="158" y="215">6</text><text x="65" y="120">9</text><text x="250" y="75">rotation</text><path d="M335 175 H405 Q475 175 475 105 V45" class="tube-line"/><text x="335" y="205">keep reference stripe / seam clocked</text></svg><p>Put a longitudinal reference stripe on the tube and treat it like a clock. A bend made with the stripe at the same clock position stays in the same plane. Rotating the tube before the next bend changes the plane. Record rotation consistently—viewing from the same datum end every time—so “clockwise 45°” never reverses halfway through the spool.</p><div class="field-calc-grid"><label>Side component (in)<input id="tubeSide" inputmode="decimal" value="4" oninput="tubeRollCalc()"></label><label>Vertical component (in)<input id="tubeVertical" inputmode="decimal" value="3" oninput="tubeRollCalc()"></label></div><div id="tubeRollResult" class="result field-calc-result"></div><p>For a rolled offset, true offset = √(side² + vertical²). Rotation from the side/horizontal reference = atan(vertical ÷ side). Then use that true offset in the normal offset calculation. Mark the rotation on the tube before placing it in the bender.</p></div><div class="card hidden" data-subtab-group="tubing" data-subtab-panel="sag"><div class="section-title"><h3>SAG method — Setback, Advance & Gain</h3><span class="source">FULL TUBE LAYOUT</span></div><p><b>SAG means Setback, Advance, Gain.</b> It is a full-layout method used to put the bend information on the straight tube before bending. It is especially useful for multi-bend pieces because every bend can be laid out from the drawing/datum before the first bend changes the shape of the tube.</p><svg class="tube-diagram" viewBox="0 0 620 230" role="img" aria-label="SAG setback advance gain tube layout"><line x1="45" y1="150" x2="575" y2="150" class="tube-line-thin"/><line x1="300" y1="45" x2="300" y2="195" class="tube-dim"/><circle cx="300" cy="150" r="6" class="tube-mark"/><circle cx="220" cy="150" r="6" class="tube-mark"/><circle cx="355" cy="150" r="6" class="tube-mark"/><text x="276" y="30">C = theoretical center</text><text x="185" y="180">S = setback mark</text><text x="340" y="180">A = advance mark</text><line x1="220" y1="105" x2="300" y2="105" class="tube-dim"/><text x="235" y="95">SETBACK</text><line x1="220" y1="205" x2="355" y2="205" class="tube-dim"/><text x="260" y="222">ADVANCE</text></svg><h4>The three numbers</h4><ul><li><b>Setback (S):</b> distance from the theoretical centerline intersection back to the tangent/start side of the bend. S = R × tan(θ/2).</li><li><b>Advance (A):</b> developed centerline length of the curved bend. A = R × θ in radians = R × θ × π/180.</li><li><b>Gain (G):</b> the straight-corner length saved by replacing two setbacks with the arc. G = 2S − A. Gain is useful when converting finished centerline dimensions into straight-tube developed length.</li></ul><div class="field-calc-grid"><label>Bender centerline radius R (in)<input id="tubeSagRadius" inputmode="decimal" value="2.5" oninput="tubeSagCalc()"></label><label>Bend angle θ (degrees)<input id="tubeSagAngle" inputmode="decimal" value="90" oninput="tubeSagCalc()"></label></div><div id="tubeSagResult" class="result field-calc-result"></div><h4>How to mark a bend with SAG</h4><ol class="tube-steps"><li>Pick one <b>datum end</b> and keep every dimension referenced from that same end unless the drawing specifically requires otherwise.</li><li>On the sketch, extend the incoming and outgoing tube centerlines until they intersect. That theoretical intersection is the bend center/reference point <b>C</b>.</li><li>Measure the drawing dimension from your datum to C and put the <b>C mark</b> completely around the straight tube.</li><li>Calculate setback for the actual bender CLR and bend angle. From C, measure <b>back toward the datum</b> by the setback and mark <b>S</b>.</li><li>From S, measure <b>forward</b> by the calculated advance and mark <b>A</b>. You now have three marks for that bend: S, C, A. Cross out or identify C so S/A cannot be confused at the bender.</li><li>Lay out the next theoretical centerline point from the drawing. Use the gain/developed-length relationship rather than simply chaining finished dimensions on the straight tube. For a multi-bend run, number every bend and write its angle plus rotation/clock direction beside the marks.</li><li>At the bender, use the correct S/A relationship for that bender and bend direction. Right-hand, left-hand and reverse bends may require approaching the marks differently; do not silently flip the datum or viewing direction.</li><li>After each bend, verify angle, plane and finished point. Springback belongs to the actual tube/material/tool combination; make a test bend and record the correction when precision matters.</li></ol><h4>Worked 90° example</h4><p>With a 2.500 in CLR and 90° bend: setback = 2.500 in; advance = 3.927 in; gain = 1.073 in. If C is at 20.000 in from the datum, S is at 17.500 in. From S, measure forward 3.927 in to place A at 21.427 in.</p><div class="card warn"><b>Do not mix systems mid-piece:</b> SAG geometry is universal, but the physical alignment mark on a particular bender is not. Verify its radius, left/right orientation, start/zero marks and springback behavior before committing a multi-bend spool.</div></div><div class="card hidden" data-subtab-group="tubing" data-subtab-panel="design"><div class="section-title"><h3>Tube bend design & manufacturability</h3><span class="source">LISTER TUBE BENDING DESIGN GUIDE</span></div><p>This page turns the uploaded design guide into field-friendly checks. These are design/manufacturing guidelines, not a substitute for the actual bender, tooling, material procedure, or project specification.</p><div class="tube-method-grid"><div><b>Compression bending</b><span>Tube is formed around a former while one end is restrained. Common for simpler/manual work and smaller tube.</span></div><div><b>Draw bending</b><span>Tooling grips and draws the tube around a former. Tooling is tied to tube OD and bend radius; thin-wall work may need a mandrel.</span></div><div><b>Roll / push bending</b><span>Tube passes through rollers to make large sweeping radii. Useful when a draw-bend former would become impractically large.</span></div></div><h4>Radius rules from the guide</h4><div class="tube-rule-grid"><div class="tube-rule"><strong>2 × D</strong><span>Guide's standard draw-bend radius rule of thumb. Example: 20 mm OD → 40 mm centerline bend radius.</span></div><div class="tube-rule"><strong>&lt; 2 × D</strong><span>Tighter draw bends are possible, but the guide warns they commonly need more costly tooling and may require mandrel support.</span></div><div class="tube-rule"><strong>7 × D</strong><span>Guide's conservative minimum roll-bending radius rule of thumb; wall thickness and material still matter.</span></div></div><h4>Multi-bend pieces</h4><ul class="tube-checklist"><li>Keep draw bends on one radius when practical. Single-stack machines only carry one tooling set at a time.</li><li>Different draw radii may require multi-stack equipment. Very close bends in different planes can require cut-away or bespoke tooling.</li><li>Large-radius multi-bends are generally better suited to push/roll bending; mixed tight and sweeping curves may require a machine with both draw and push capability.</li><li>Watch for self-fouling shapes: loops or “knots,” bends near/over 180°, tight coils, and long legs that can hit the machine or floor.</li><li>Before finalizing an unusual part, check the chosen tube OD, wall, material, radius and bend sequence with the shop that will actually bend it.</li></ul><details class="tube-details"><summary>Common tube sizes shown in the guide</summary><div class="tube-size-columns"><div><b>Imperial OD / wall</b><p>3/16 in × 0.71 mm; 1/4 and 5/16 × 0.91 mm; 3/8 × 1.22 mm; 1/2 and 5/8 × 1.63 mm; 3/4 and 7/8 × 2.03 mm; 1, 1-1/4, 1-1/2 and 2 in × 3.25 mm.</p></div><div><b>Metric OD / wall</b><p>4, 6, 8, 10 mm × 1 mm; 12 and 15 × 1.5; 16 × 2; 18 × 1.5; 20, 22, 25, 28 × 2; 30 and 35 × 3; 38 × 4; 42 × 3 mm.</p></div></div></details><div class="note-box muted"><b>Important:</b> bend radius in this guide is measured to the tube centerline. Tool availability can matter as much as geometry, so a “possible” radius is not automatically the economical or available radius.</div></div><div class="card hidden" data-subtab-group="tubing" data-subtab-panel="fieldmath"><div class="section-title"><h3>Blue Book field math companion</h3><span class="source">W.V. GRAVES TOPICS + STANDARD TRIG</span></div><p>The <i>Pipe Fitters Blue Book</i> includes common piping angles, rolling offsets, special offsets, pipe bends and trigonometry tables. This quick page uses the same kinds of field problems with standard geometry; it does not reproduce the book's copyrighted tables or pages.</p><h4>Common two-bend offset multipliers</h4><div class="tube-math-table"><div class="head">Bend</div><div class="head">Travel = offset ×</div><div class="head">Run = offset ×</div><div>15°</div><div>3.864</div><div>3.732</div><div>22.5°</div><div>2.613</div><div>2.414</div><div>30°</div><div>2.000</div><div>1.732</div><div>45°</div><div>1.414</div><div>1.000</div><div>60°</div><div>1.155</div><div>0.577</div></div><p class="muted">Travel multiplier = 1 ÷ sin(angle). Run multiplier = 1 ÷ tan(angle). Use centerline dimensions and then apply the actual fitting/bender takeoff convention.</p><h4>Rolling offset</h4><div class="formula-card"><b>True offset = √(side² + rise²)</b><br>Roll angle from the side reference = atan(rise ÷ side). After finding true offset, use the normal offset travel multiplier for the bend angle.</div><h4>Pipe bend quick geometry</h4><div class="formula-card"><b>Setback = R × tan(θ/2)</b><br><b>Arc / advance = R × θ × π/180</b><br><b>Gain = 2 × setback − arc</b></div><div class="tube-field-tip"><b>Field sequence:</b> solve the true geometry first, keep one datum, mark bend number + angle + rotation, then translate the mark to the actual tool. Do not mix fitting takeoff, tube-bender arrow marks and pure centerline geometry as if they were the same number.</div></div><div class="card hidden" data-subtab-group="tubing" data-subtab-panel="photos"><div class="section-title"><h3>Real bend & bender photo references</h3><span class="source">VISUAL CHECKS</span></div><p>Use these real-world references to connect the diagrams to actual tubing. Photos are references only; dimensions still come from the drawing and the actual bender/tooling.</p><div class="tube-photo-grid"><figure><img src="https://sscustoms.com.au/cdn/shop/files/CLR_720x_0063a77c-8a79-4492-a4fc-311c3fc92831.webp?v=1717401030" alt="Real stainless tube bend showing centerline radius measurement" loading="lazy"><figcaption>Real stainless bend showing how CLR relates to tube diameter and the finished curve. <a href="https://sscustoms.com.au/fr/products/y-multi-block" target="_blank" rel="noopener">Open source</a></figcaption></figure><figure class="tube-photo-link"><div><b>Hand tube bender in use</b><p>Swagelok's tube-bender page includes an actual hand-bender-in-use photo plus hand and bench-top bending references.</p><a href="https://products.swagelok.com/en/all-products/tubing-tube-accessories/tube-benders/c/803" target="_blank" rel="noopener">VIEW REAL BENDER PHOTO / REFERENCE</a></div></figure><figure class="tube-photo-link"><div><b>Hand bender manual photos</b><p>The Tube Fitter's Manual shows the actual hand bender, vise setup, bend marks and measure-bend examples.</p><a href="https://www.swagelok.com/downloads/webcatalogs/en/MS-13-03.PDF" target="_blank" rel="noopener">OPEN TUBE FITTER'S MANUAL</a></div></figure></div><div class="note-box muted">The black-and-white bend picture you showed is the right kind of reference for teaching CLR, OD, ID, wall thickness and bend angle. The LAYOUT and SAG diagrams in this tab use those same geometry concepts, while these links/photos show what the tooling and finished tubing look like in the field.</div></div></section>
+      <section id="manual" class="page"><div class="manual-head"><div><h2>Pipefitter Manual</h2><p>Actual uploaded <i>Audel Pipefitter's and Welder's Pocket Manual</i> — full pages, tables, diagrams and index.</p></div><a class="manual-open" href="./resources/AudelPipefittersWeldersPocketManual.pdf" target="_blank" rel="noopener">OPEN FULL MANUAL</a></div><div class="manual-topic-strip" aria-label="Manual topic guide"><a href="./manual-viewer.html?page=23" target="manualPdfFrame">Math & metrics</a><a href="./manual-viewer.html?page=97" target="manualPdfFrame">Offsets</a><a href="./manual-viewer.html?page=173" target="manualPdfFrame">Pipe welding</a><a href="./manual-viewer.html?page=263" target="manualPdfFrame">Steam / hot water</a><a href="./manual-viewer.html?page=315" target="manualPdfFrame">Refrigeration</a><a href="./manual-viewer.html?page=349" target="manualPdfFrame">Fire protection</a><a href="./manual-viewer.html?page=381" target="manualPdfFrame">Plastic process piping</a><a href="./manual-viewer.html?page=407" target="manualPdfFrame">Grooved piping</a><a href="./manual-viewer.html?page=423" target="manualPdfFrame">Gas piping</a><a href="./manual-viewer.html?page=449" target="manualPdfFrame">TIG / GTAW</a><a href="./manual-viewer.html?page=487" target="manualPdfFrame">Field reference</a></div><div class="card warn"><b>Reference edition:</b> This is the actual uploaded 2003 manual, not a shortened rewrite. For code-, product-, safety- and procedure-sensitive work, current controlling documents still govern.</div><div class="manual-viewer-card"><iframe class="manual-pdf" name="manualPdfFrame" title="Audel Pipefitter Manual" src="./manual-viewer.html?page=1"></iframe></div></section>
+      <section id="search" class="page">
+        <h2>Pipefitter Search</h2>
+        <div class="search-box"><input id="fieldSearch" type="search" placeholder="Search welding, rigging, safety, testing, supports, materials…" oninput="fieldReferenceSearch(this.value)"></div>
+        <div class="card good"><b>Offline field reference:</b> quick original summaries and shortcuts to the calculators already in this app. Project drawings, codes, manufacturer instructions, qualified procedures, and current safety rules control the work.</div>
+        <div id="fieldSearchResults" class="search-results"></div>
+        <div id="fieldReferenceDetail" class="field-reference-detail hidden"></div>
+      </section>
+      <section id="ref" class="page">
+        <h2>Reference + Flange Torque</h2>
+        <div class="section-subtabs" role="tablist" aria-label="Reference categories"><button class="on" data-subtab-button-group="ref" data-subtab-button-panel="od" onclick="selectSectionTab('ref','od',this)">PIPE OD</button><button data-subtab-button-group="ref" data-subtab-button-panel="trig" onclick="selectSectionTab('ref','trig',this)">QUICK TRIG</button><button data-subtab-button-group="ref" data-subtab-button-panel="wrench" onclick="selectSectionTab('ref','wrench',this)">WRENCH SIZES</button><button data-subtab-button-group="ref" data-subtab-button-panel="sequence" onclick="selectSectionTab('ref','sequence',this)">BOLT SEQUENCE</button><button data-subtab-button-group="ref" data-subtab-button-panel="torque" onclick="selectSectionTab('ref','torque',this)">TORQUE</button></div>
+        <div class="card" data-subtab-group="ref" data-subtab-panel="od">
+          <h3>NPS Outside Diameter</h3>
+          <div id="odList"></div>
+        </div>
+        <div class="card hidden" data-subtab-group="ref" data-subtab-panel="trig">
+          <h3>Quick Trig</h3>
+          <div class="table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Angle</th>
+                  <th>Travel multiplier</th>
+                  <th>Run multiplier</th>
+                </tr>
+              </thead>
+              <tbody id="trig"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card hidden" data-subtab-group="ref" data-subtab-panel="wrench"><div class="section-title"><h3>Flange Bolt → Wrench Size</h3><span class="source">5/16&quot; THROUGH 1-1/2&quot; • EVERY 1/16&quot;</span></div><div class="table"><table><thead><tr><th>Bolt size</th><th>Standard hex</th><th>Extra heavy / heavy hex</th></tr></thead><tbody id="flangeWrenchBody"></tbody></table></div><div class="note-box muted"><b>Standard vs extra heavy:</b> common published nominal sizes use their standard across-flats wrench values. Intermediate 1/16&quot; bolt diameters that are not common standard nominal fastener sizes are shown as calculated field references and should be verified against the actual nut/head. Heavy-hex values follow the larger across-flats family represented by the book chart. The torque helper shows both sizes whenever its flange table includes the bolt diameter.</div></div>
+        <div class="card hidden" data-subtab-group="ref" data-subtab-panel="sequence">
+          <div class="section-title">
+            <h3>Flange Bolt Sequence</h3>
+            <span class="source">Start anywhere • label clockwise left → right</span>
+          </div>
+          <label
+            >Number of bolts<select
+              id="boltCount"
+              onchange="renderBoltPattern()"
+            >
+              <option>4</option>
+              <option selected>8</option>
+              <option>12</option>
+              <option>16</option>
+            </select></label
+          >
+          <div id="boltPatternWrap"></div>
+          <div class="note-box muted"><b>Bolt numbering and torque level are separate.</b> Use the number order above for every pass. Follow the gasket/manufacturer/plant procedure for the required torque levels and final check.</div>
+        </div>
+        <div class="card hidden" data-subtab-group="ref" data-subtab-panel="torque">
+          <div class="section-title">
+            <h3>Flange Torque Helper</h3>
+            <span class="source">Manufacturer torque tables</span>
+          </div>
+          <div class="grid">
+            <label
+              >Gasket family<select
+                id="torqueFamily"
+                onchange="torqueFamilyChanged()"
+              >
+                <option value="sheet">
+                  Compressed sheet / GYLON ring gasket
+                </option>
+                <option value="graphlock">
+                  GRAPH-LOCK graphite sheet gasket
+                </option>
+                <option value="flexseal">FLEXSEAL spiral wound gasket</option>
+                <option value="rubberSoft">
+                  Full-face rubber &lt;70 Shore A
+                </option>
+                <option value="rubberHard">Full-face rubber ≥70 Shore A</option>
+              </select></label
+            ><label
+              >ASME class<select id="torqueClass" onchange="torqueCalc()">
+                <option value="150">150</option>
+                <option value="300">300</option>
+              </select></label
+            ><label
+              >Nominal size<select
+                id="torqueSize"
+                onchange="torqueCalc()"
+              ></select
+            ></label>
+          </div>
+          <button class="primary" onclick="torqueCalc()">GET TORQUE</button>
+          <div id="torqueOut" class="result"></div>
+          <div class="note-box muted">
+            Manufacturer-reference values only. Verify gasket, bolting,
+            lubrication, flange condition and plant procedure.
+          </div>
+        </div>
+      </section>
+    </div>
+    <div
+      id="measurePadOverlay"
+      class="measure-pad-overlay hidden"
+      onclick="measureOverlayClick(event)"
+    >
+      <div class="measure-pad" role="dialog" aria-modal="true">
+        <div class="measure-pad-head">
+          <div>
+            <div class="tag">FIELD MEASUREMENT CALCULATOR</div>
+            <h3 id="measurePadTitle">Rise</h3>
+          </div>
+          <button onclick="closeMeasurePad()">✕</button>
+        </div>
+        <div class="measure-fields">
+          <label
+            >Feet<input
+              id="mpFeet"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              placeholder="0"
+              oninput="updateMeasurePreview()" /></label
+          ><label
+            >Inches<input
+              id="mpInches"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              placeholder="0"
+              oninput="updateMeasurePreview()"
+          /></label>
+        </div>
+        <div class="measure-frac-row">
+          <label
+            >Fraction top<input
+              id="mpNum"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              placeholder="0"
+              oninput="updateMeasurePreview()"
+          /></label>
+          <div class="measure-slash">/</div>
+          <label
+            >Fraction bottom<input
+              id="mpDen"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              placeholder="16"
+              oninput="updateMeasurePreview()"
+          /></label>
+        </div>
+        <div class="measure-quick">
+          <button onclick="setMeasureFrac(1, 8)">1/8</button
+          ><button onclick="setMeasureFrac(1, 4)">1/4</button
+          ><button onclick="setMeasureFrac(1, 2)">1/2</button
+          ><button onclick="setMeasureFrac(3, 4)">3/4</button
+          ><button onclick="setMeasureFrac(7, 8)">7/8</button
+          ><button onclick="setMeasureFrac(0, 1)">NO FRAC</button>
+        </div>
+        <button class="measure-maincalc" onclick="measureUseMainCalc()">USE MAIN CALCULATOR VALUE</button>
+        <div id="measurePreview" class="measure-preview">0&quot;</div>
+        <div class="measure-pad-actions">
+          <button onclick="clearMeasurePad()">CLEAR</button
+          ><button class="primary" onclick="applyMeasurePad()">
+            USE MEASUREMENT
+          </button>
+        </div>
+      </div>
+    </div>
+    <nav class="tabs" aria-label="Main sections">
+      <button class="on" onclick="tab('calc', this)">CALC</button>
+      <button onclick="tab('layout', this)">LAYOUT</button>
+      <button onclick="tab('iso', this)">ISO</button>
+      <button onclick="tab('tools', this)">TOOLS</button>
+      <button onclick="tab('saddle', this)">SADDLE</button>
+      <button onclick="tab('takeoffs', this)">TAKEOFFS</button>
+      <button onclick="tab('fusion', this)">FUSION</button>
+      <button onclick="tab('tubing', this); tubeInit()">TUBING</button>
+      <button onclick="tab('manual', this)">MANUAL</button>
+      <button onclick="tab('ref', this)">REF</button>
+      <button onclick="tab('search', this); fieldReferenceSearch(document.getElementById('fieldSearch').value)">SEARCH</button>
+    </nav>
+    <script src="./field-reference.js?v=46"></script>
+    <script src="./tubing.js?v=3"></script>
+    <script src="./data.js?v=35"></script>
+    <script src="./core1.js?v=35"></script>
+    <script src="./core2.js?v=41"></script>
+    <script src="./saddle.js?v=38"></script>
+    <script src="./takeoffs.js?v=35"></script>
+    <script src="./torque.js?v=35"></script>
+    <script src="./iso.js?v=37"></script>
+    <script src="./iso-draw.js?v=55"></script>
+    <script src="./fusion.js?v=2"></script>
+    <script src="./tools.js?v=35"></script>
+    <script src="./init.js?v=35"></script>
+  </body>
+</html>
