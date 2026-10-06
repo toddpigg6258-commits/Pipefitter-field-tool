@@ -10,6 +10,8 @@ let isoGridVisible = true;
 let isoGridMeasurementMode = 'AUTO';
 let isoGridSnapEnabled = true;
 let isoGridTapGuard = null;
+let isoGridPinchActive = false;
+let isoGridPinchSuppressUntil = 0;
 let isoGridState = {
   SHARED: { segments: [], symbols: [] },
 };
@@ -1060,6 +1062,7 @@ function isoGridRender() {
       const touch = event.changedTouches[0];
       const start = branchTouchStart;
       branchTouchStart = null;
+      if (isoGridPinchActive || Date.now() < isoGridPinchSuppressUntil) return;
       if (!touch || !start || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 14) return;
       const editingEndpoint = event.target.closest?.('.iso-end-handle, .iso-end-touch');
       const editingMeasure = event.target.closest?.('[data-grid-measure], [data-grid-rise], [data-grid-run]');
@@ -1822,6 +1825,10 @@ function initIsoDrawing() {
   }
   let captureStart = null;
   capture.addEventListener('touchstart', event => {
+    if (event.touches.length > 1) {
+      captureStart = null;
+      return;
+    }
     const touch = event.changedTouches[0];
     if (!touch) return;
     captureStart = { x: touch.clientX, y: touch.clientY };
@@ -1831,6 +1838,7 @@ function initIsoDrawing() {
     const touch = event.changedTouches[0];
     const start = captureStart;
     captureStart = null;
+    if (isoGridPinchActive || Date.now() < isoGridPinchSuppressUntil) return;
     if (!touch || !start || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 14) return;
     isoGridTap({
       clientX: touch.clientX,
@@ -1850,6 +1858,77 @@ function initIsoDrawing() {
     if (event.target === capture) return;
     isoGridTap(event, true);
   });
+
+  // Two-finger pinch zoom for the drawing itself on iPhone/iPad.
+  // Keep tap-to-draw and tap-pipe-for-tee separate from multi-touch gestures.
+  const viewport = $('isoTapViewport');
+  let pinchStartDistance = 0;
+  let pinchStartZoom = isoGridZoom;
+  let pinchCenter = null;
+  const touchDistance = touches => Math.hypot(
+    touches[0].clientX - touches[1].clientX,
+    touches[0].clientY - touches[1].clientY
+  );
+  scene.addEventListener('touchstart', event => {
+    if (event.touches.length !== 2) return;
+    isoGridPinchActive = true;
+    isoGridPinchSuppressUntil = Date.now() + 500;
+    captureStart = null;
+    pinchStartDistance = Math.max(1, touchDistance(event.touches));
+    pinchStartZoom = isoGridZoom;
+    if (viewport) {
+      const rect = viewport.getBoundingClientRect();
+      const clientX = (event.touches[0].clientX + event.touches[1].clientX) / 2;
+      const clientY = (event.touches[0].clientY + event.touches[1].clientY) / 2;
+      pinchCenter = {
+        clientX,
+        clientY,
+        contentX: (viewport.scrollLeft + clientX - rect.left) / isoGridZoom,
+        contentY: (viewport.scrollTop + clientY - rect.top) / isoGridZoom,
+      };
+    }
+    event.preventDefault();
+  }, { passive: false });
+  scene.addEventListener('touchmove', event => {
+    if (!isoGridPinchActive || event.touches.length !== 2) return;
+    const nextZoom = Math.max(0.8, Math.min(2.8, pinchStartZoom * touchDistance(event.touches) / pinchStartDistance));
+    isoGridZoom = Math.round(nextZoom * 100) / 100;
+    const width = ISO_GRID_WIDTH * isoGridZoom;
+    const height = ISO_GRID_HEIGHT * isoGridZoom;
+    scene.style.width = `${width}px`;
+    scene.style.height = `${height}px`;
+    const svg = $('isoTapSvg');
+    if (svg) {
+      svg.style.width = `${width}px`;
+      svg.style.height = `${height}px`;
+    }
+    if (viewport && pinchCenter) {
+      const rect = viewport.getBoundingClientRect();
+      const clientX = (event.touches[0].clientX + event.touches[1].clientX) / 2;
+      const clientY = (event.touches[0].clientY + event.touches[1].clientY) / 2;
+      viewport.scrollLeft = pinchCenter.contentX * isoGridZoom - (clientX - rect.left);
+      viewport.scrollTop = pinchCenter.contentY * isoGridZoom - (clientY - rect.top);
+    }
+    event.preventDefault();
+  }, { passive: false });
+  const finishPinch = event => {
+    if (!isoGridPinchActive || event.touches.length >= 2) return;
+    isoGridPinchActive = false;
+    isoGridPinchSuppressUntil = Date.now() + 500;
+    pinchCenter = null;
+    isoGridSetStatus(`Zoom ${isoGridZoom.toFixed(1)}×. Pinch with two fingers to zoom, or tap points to draw.`);
+    isoGridRender();
+    isoGridSave();
+    event.preventDefault();
+  };
+  scene.addEventListener('touchend', finishPinch, { passive: false });
+  scene.addEventListener('touchcancel', event => {
+    if (!isoGridPinchActive) return;
+    isoGridPinchActive = false;
+    isoGridPinchSuppressUntil = Date.now() + 500;
+    pinchCenter = null;
+    isoGridRender();
+  }, { passive: false });
   const scale = $('isoGridScale');
   if (scale) scale.addEventListener('change', () => {
     isoGridSetStatus('Drawing scale changed. Automatic dimensions were recalculated; manual section dimensions stay unchanged.');
