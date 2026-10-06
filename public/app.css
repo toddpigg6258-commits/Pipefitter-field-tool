@@ -2161,3 +2161,6 @@ th {
   #calc .precision { margin-top:7px; min-height:34px; font-size:11px; }
   #calc .precision select { width:auto; padding:6px 8px; }
 }
+
+.iso-first-run-capture { display:none; position:absolute; inset:0; z-index:4; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; background:transparent; }
+.iso-first-run-capture.active { display:block; }
