@@ -1778,66 +1778,15 @@ function initIsoDrawing() {
   isoGridApplyDisplayState();
   const scene = $('isoTapScene');
   if (!scene) return;
-  // iPhone Safari: capture every finger contact at document level.
-  // The first touch re-renders the SVG, so the second finger must not depend on
-  // the original SVG target still existing. Coordinates are resolved directly
-  // against the persistent scene instead.
-  const fingerTouchIds = new Set();
-  const handleFingerStart = event => {
-    const rect = scene.getBoundingClientRect();
-    let handled = false;
-    for (const touch of event.changedTouches) {
-      if (touch.clientX < rect.left || touch.clientX > rect.right || touch.clientY < rect.top || touch.clientY > rect.bottom) continue;
-      fingerTouchIds.add(touch.identifier);
-      const hit = document.elementFromPoint(touch.clientX, touch.clientY);
-      if (hit?.closest?.('[data-grid-symbol],[data-grid-measure],[data-grid-rise],[data-grid-run],.iso-end-handle,.iso-end-touch')) continue;
-      const segmentBody = hit?.closest?.('[data-grid-segment]');
-      if (segmentBody) continue;
-      isoGridTap({
-        clientX: touch.clientX,
-        clientY: touch.clientY,
-        target: scene,
-        preventDefault: () => {},
-        stopPropagation: () => {},
-      }, true);
-      handled = true;
-    }
-    if (handled) {
-      isoGridTapGuard = { until: Date.now() + 800 };
-      event.preventDefault();
-    }
-  };
-  const handleFingerEnd = event => {
-    let handled = false;
-    for (const touch of event.changedTouches) {
-      if (fingerTouchIds.delete(touch.identifier)) handled = true;
-    }
-    if (handled) {
-      isoGridTapGuard = { until: Date.now() + 800 };
-      event.preventDefault();
-    }
-  };
-  document.addEventListener('touchstart', handleFingerStart, { capture: true, passive: false });
-  document.addEventListener('touchend', handleFingerEnd, { capture: true, passive: false });
-  document.addEventListener('touchcancel', event => {
-    for (const touch of event.changedTouches) fingerTouchIds.delete(touch.identifier);
-  }, { capture: true, passive: true });
-
-  let penTapStart = null;
-  scene.addEventListener('pointerdown', event => {
-    if (event.pointerType === 'pen') penTapStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
-  });
-  scene.addEventListener('pointerup', event => {
-    if (event.pointerType !== 'pen' || !penTapStart || event.pointerId !== penTapStart.id) return;
-    const moved = Math.hypot(event.clientX - penTapStart.x, event.clientY - penTapStart.y);
-    penTapStart = null;
-    if (moved > 12) return;
+  // A pipe run is deliberately a normal sequential tap workflow:
+  // tap once, release, then tap a second point and release.
+  // Let Safari finish each tap and deliver one click; do not synthesize taps
+  // from touchstart/touchend or hold a guard across the next finger tap.
+  isoGridTapGuard = null;
+  scene.addEventListener('click', event => {
+    isoGridTapGuard = null;
     isoGridTap(event, true);
-    isoGridTapGuard = { until: Date.now() + 650 };
-    event.preventDefault();
   });
-  scene.addEventListener('pointercancel', event => { if (event.pointerType === 'pen') penTapStart = null; });
-  scene.addEventListener('click', isoGridTap);
   const scale = $('isoGridScale');
   if (scale) scale.addEventListener('change', () => {
     isoGridSetStatus('Drawing scale changed. Automatic dimensions were recalculated; manual section dimensions stay unchanged.');
