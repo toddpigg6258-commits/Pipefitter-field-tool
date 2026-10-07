@@ -1229,7 +1229,7 @@ function isoGridRender() {
       const touch = event.changedTouches[0];
       const start = branchTouchStart;
       branchTouchStart = null;
-      if (isoGridPinchActive || Date.now() < isoGridPinchSuppressUntil) return;
+      if (isoGridPinchActive || Date.now() < isoGridPinchSuppressUntil || (isoGridTapGuard && Date.now() <= isoGridTapGuard.until)) return;
       if (!touch || !start || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 18) return;
       const editingEndpoint = event.target.closest?.('.iso-end-handle, .iso-end-touch');
       const editingMeasure = event.target.closest?.('[data-grid-measure], [data-grid-rise], [data-grid-run]');
@@ -1484,6 +1484,95 @@ function isoGridSelectSymbol(index) {
   isoGridRender();
 }
 
+function isoGridReflowMeasuredRun(selectedIndex) {
+  const drawing = isoGridCurrent();
+  const selected = drawing.segments[selectedIndex];
+  if (!selected) return false;
+  const same = (p, q) => p && q && Math.hypot(p.x - q.x, p.y - q.y) < 1;
+  const otherEnd = (segment, point) => same(segment.a, point) ? segment.b : same(segment.b, point) ? segment.a : null;
+  const continuation = (segmentIndex, point) => {
+    const segment = drawing.segments[segmentIndex];
+    const towardCurrent = otherEnd(segment, point);
+    if (!towardCurrent) return -1;
+    const vx = towardCurrent.x - point.x;
+    const vy = towardCurrent.y - point.y;
+    const vl = Math.hypot(vx, vy) || 1;
+    let best = -1;
+    let bestDot = 1;
+    drawing.segments.forEach((candidate, index) => {
+      if (index === segmentIndex) return;
+      const away = otherEnd(candidate, point);
+      if (!away) return;
+      const wx = away.x - point.x;
+      const wy = away.y - point.y;
+      const wl = Math.hypot(wx, wy) || 1;
+      const dot = (vx * wx + vy * wy) / (vl * wl);
+      if (dot < -0.96 && dot < bestDot) { bestDot = dot; best = index; }
+    });
+    return best;
+  };
+  const walk = (startIndex, startPoint) => {
+    const found = [];
+    let index = startIndex;
+    let point = { ...startPoint };
+    const seen = new Set([startIndex]);
+    while (true) {
+      const next = continuation(index, point);
+      if (next < 0 || seen.has(next)) break;
+      found.push(next);
+      seen.add(next);
+      const nextPoint = otherEnd(drawing.segments[next], point);
+      if (!nextPoint) break;
+      point = { ...nextPoint };
+      index = next;
+    }
+    return found;
+  };
+  const left = walk(selectedIndex, selected.a).reverse();
+  const right = walk(selectedIndex, selected.b);
+  const indices = [...left, selectedIndex, ...right];
+  if (indices.length < 2) return false;
+
+  let startPoint;
+  if (indices.length === 1) startPoint = drawing.segments[indices[0]].a;
+  else {
+    const first = drawing.segments[indices[0]];
+    const second = drawing.segments[indices[1]];
+    startPoint = (same(first.a, second.a) || same(first.a, second.b)) ? first.b : first.a;
+  }
+  const nodes = [{ ...startPoint }];
+  let cursor = { ...startPoint };
+  for (const index of indices) {
+    const next = otherEnd(drawing.segments[index], cursor);
+    if (!next) return false;
+    nodes.push({ ...next });
+    cursor = { ...next };
+  }
+
+  const measures = indices.map(index => {
+    const value = drawing.segments[index].measure?.trim();
+    if (!value) return NaN;
+    try { return literal(value); } catch { return NaN; }
+  });
+  if (measures.some(value => !(value > 0))) return false;
+  const total = measures.reduce((sum, value) => sum + value, 0);
+  if (!(total > 0)) return false;
+
+  const start = nodes[0];
+  const end = nodes[nodes.length - 1];
+  let cumulative = 0;
+  for (let i = 1; i < nodes.length - 1; i += 1) {
+    cumulative += measures[i - 1];
+    const ratio = cumulative / total;
+    const target = {
+      x: start.x + (end.x - start.x) * ratio,
+      y: start.y + (end.y - start.y) * ratio,
+    };
+    isoGridMoveSharedNode(nodes[i], target);
+  }
+  return true;
+}
+
 function isoGridSaveSegmentInfo() {
   const segment = isoGridCurrent().segments[isoGridSelectedSegment];
   if (!segment) {
@@ -1496,8 +1585,9 @@ function isoGridSaveSegmentInfo() {
   segment.runMeasure = $('isoGridRunMeasure') ? $('isoGridRunMeasure').value.trim() : '';
   segment.note = $('isoGridNote') ? $('isoGridNote').value.trim() : '';
   const offsetMath = isoGridApplyOffsetGeometry(segment);
+  const runReflowed = !offsetMath && isoGridReflowMeasuredRun(isoGridSelectedSegment);
   isoGridSyncSpoolLegs();
-  isoGridSetStatus(offsetMath ? `OFFSET ${offsetMath.angle.toFixed(1)}° calculated from RISE ${segment.riseMeasure} and RUN ${segment.runMeasure}. Travel is ${fmtFeet(offsetMath.travel)} and its drawn length is kept proportional to other measured pipe while remaining on the in-between ISO plane.` : `Section S${isoGridSelectedSegment + 1} saved. Travel: ${segment.dimensionType} ${isoGridSegmentMeasure(segment)}${segment.riseMeasure ? ` • RISE ${segment.riseMeasure}` : ''}${segment.runMeasure ? ` • RUN ${segment.runMeasure}` : ''}.`);
+  isoGridSetStatus(offsetMath ? `OFFSET ${offsetMath.angle.toFixed(1)}° calculated from RISE ${segment.riseMeasure} and RUN ${segment.runMeasure}. Travel is ${fmtFeet(offsetMath.travel)} and its drawn length is kept proportional to other measured pipe while remaining on the in-between ISO plane.` : runReflowed ? `Section S${isoGridSelectedSegment + 1} saved. Tee location(s) on this straight run were repositioned to match the entered pipe measurements proportionally.` : `Section S${isoGridSelectedSegment + 1} saved. Travel: ${segment.dimensionType} ${isoGridSegmentMeasure(segment)}${segment.riseMeasure ? ` • RISE ${segment.riseMeasure}` : ''}${segment.runMeasure ? ` • RUN ${segment.runMeasure}` : ''}.`);
   isoGridRender();
 }
 
@@ -2070,6 +2160,55 @@ function initIsoDrawing() {
     if (event.target === capture || Date.now() < isoGridPanSuppressUntil) return;
     isoGridTap(event, true);
   });
+
+  // Direct pipe tap: a stationary finger tap near the body of an existing pipe
+  // immediately installs a tee and makes that tee the active branch start.
+  let directPipeTap = null;
+  scene.addEventListener('touchstart', event => {
+    if (event.touches.length !== 1 || isoGridPinchActive || isoGridMode !== 'LINE') {
+      directPipeTap = null;
+      return;
+    }
+    if (event.target.closest?.('[data-grid-symbol], .iso-end-handle, .iso-end-touch, [data-grid-measure], [data-grid-rise], [data-grid-run]')) {
+      directPipeTap = null;
+      return;
+    }
+    const touch = event.touches[0];
+    directPipeTap = touch ? { x: touch.clientX, y: touch.clientY } : null;
+  }, { capture: true, passive: true });
+  scene.addEventListener('touchend', event => {
+    const start = directPipeTap;
+    directPipeTap = null;
+    if (!start || isoGridMode !== 'LINE' || isoGridPinchActive || isoGridPanActive || Date.now() < isoGridPinchSuppressUntil) return;
+    const touch = event.changedTouches[0];
+    if (!touch || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 18) return;
+    if (event.target.closest?.('[data-grid-symbol], .iso-end-handle, .iso-end-touch, [data-grid-measure], [data-grid-rise], [data-grid-run]')) return;
+    const tapEvent = {
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      target: event.target,
+      preventDefault: () => {},
+      stopPropagation: () => {},
+    };
+    const point = isoGridEventPoint(tapEvent, false, false);
+    const nearest = point ? isoGridNearestSegment(point, 28) : null;
+    if (!nearest) return;
+    const segment = isoGridCurrent().segments[nearest.index];
+    if (!segment) return;
+    const nearEnd = Math.min(
+      Math.hypot(nearest.point.x - segment.a.x, nearest.point.y - segment.a.y),
+      Math.hypot(nearest.point.x - segment.b.x, nearest.point.y - segment.b.y)
+    );
+    if (nearEnd < 12) return;
+    const teeEvent = { ...tapEvent, clientX: touch.clientX, clientY: touch.clientY };
+    if (isoGridStartBranchOnSegment(nearest.index, teeEvent)) {
+      isoGridTapGuard = { until: Date.now() + 700 };
+      isoGridPanSuppressUntil = Date.now() + 700;
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }, { capture: true, passive: false });
+  scene.addEventListener('touchcancel', () => { directPipeTap = null; }, { capture: true, passive: true });
 
   // One-finger swipe pans around the drawing after zooming.
   // A stationary tap still draws/selects; movement turns the gesture into pan.
