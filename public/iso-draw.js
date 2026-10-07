@@ -771,10 +771,7 @@ function isoGridSymbolMarkup(symbol, index) {
   else if (type === 'CONC_REDUCER') shape = `<path d="M -24 0 H -8 L 18 -9 M -8 0 L 18 9" ${line}/>`;
   else if (type === 'ECC_REDUCER') shape = `<path d="M -24 0 H -8 L 18 -8 M -8 0 H 18" ${line}/>`;
   else if (type === 'UNION') shape = `<path d="M -24 0 H -8 M -5 -13 V 13 M 3 -13 V 13 M 6 0 H 24" ${line}/>`;
-  else if (type === 'FLANGE' || type === 'WN_FLANGE') shape = `<path d="M -27 8 L -7 0 M -7 -15 V 15 M 0 -15 V 15 M 0 0 H 25" ${line}/>`;
-  else if (type === 'SO_FLANGE') shape = `<path d="M -25 7 L -5 0 M -5 -14 V 14 M 2 -14 V 14 M -2 0 H 25" ${line}/>`;
-  else if (type === 'SW_FLANGE') shape = `<path d="M -26 8 L -10 1 H -4 M -4 -14 V 14 M 3 -14 V 14 M 3 0 H 25" ${line}/>`;
-  else if (type === 'BLIND_FLANGE') shape = `<path d="M -25 0 H -3 M -3 -16 V 16 M 4 -16 V 16" ${line}/>`;
+  else if (['FLANGE', 'WN_FLANGE', 'SO_FLANGE', 'SW_FLANGE', 'BLIND_FLANGE'].includes(type)) shape = `<path d="M -8 0 H 8" fill="none" stroke="white" stroke-width="8" vector-effect="non-scaling-stroke"/><path d="M -4 -15 V 15 M 4 -15 V 15" ${line}/>`;
   else if (type === 'GATE') shape = `<path d="M -27 0 H -14 L 0 -11 L 14 0 L 0 11 L -14 0 H 27" ${line}/>`;
   else if (type === 'GLOBE') shape = `<path d="M -27 0 H -14 L 0 -10 L 14 0 L 0 10 L -14 0 H 27" ${line}/><circle cx="0" cy="0" r="4" fill="#111827"/>`;
   else if (type === 'PLUG') shape = `<path d="M -27 0 H -14 L 0 -10 L 14 0 L 0 10 L -14 0 H 27" ${line}/><path d="M -4 -5 L 4 5" ${line}/>`;
