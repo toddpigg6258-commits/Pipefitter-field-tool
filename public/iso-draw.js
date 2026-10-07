@@ -1230,7 +1230,7 @@ function isoGridRender() {
       const start = branchTouchStart;
       branchTouchStart = null;
       if (isoGridPinchActive || Date.now() < isoGridPinchSuppressUntil) return;
-      if (!touch || !start || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 14) return;
+      if (!touch || !start || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 18) return;
       const editingEndpoint = event.target.closest?.('.iso-end-handle, .iso-end-touch');
       const editingMeasure = event.target.closest?.('[data-grid-measure], [data-grid-rise], [data-grid-run]');
       if (editingEndpoint || editingMeasure) return;
@@ -2086,6 +2086,7 @@ function initIsoDrawing() {
       y: touch.clientY,
       scrollLeft: viewport.scrollLeft,
       scrollTop: viewport.scrollTop,
+      preferPipeTap: !!event.target.closest?.('.iso-tap-hit, .iso-tap-pipe'),
     };
     isoGridPanActive = false;
   }, { capture: true, passive: true });
@@ -2094,7 +2095,8 @@ function initIsoDrawing() {
     const touch = event.touches[0];
     const dx = touch.clientX - panStart.x;
     const dy = touch.clientY - panStart.y;
-    if (!isoGridPanActive && Math.hypot(dx, dy) < 9) return;
+    const panThreshold = panStart.preferPipeTap ? 18 : 9;
+    if (!isoGridPanActive && Math.hypot(dx, dy) < panThreshold) return;
     isoGridPanActive = true;
     isoGridPanSuppressUntil = Date.now() + 650;
     captureStart = null;
