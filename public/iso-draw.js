@@ -14,6 +14,7 @@ let isoGridPinchActive = false;
 let isoGridPinchSuppressUntil = 0;
 let isoGridPanActive = false;
 let isoGridPanSuppressUntil = 0;
+let isoGridMeasurementDragUntil = 0;
 let isoGridState = {
   SHARED: { segments: [], symbols: [] },
 };
@@ -939,6 +940,26 @@ function isoGridQuickEditMeasurement() {
   if (typeof openMeasurePad === 'function') openMeasurePad('isoGridMeasure', `Pipe S${isoGridSelectedSegment + 1}`);
 }
 
+function isoGridAdjustMeasurementSize(delta) {
+  const segment = isoGridCurrent().segments[isoGridSelectedSegment];
+  if (!segment) return;
+  const current = Number(segment.measurementScale) || 1;
+  segment.measurementScale = Math.max(0.6, Math.min(1.4, Math.round((current + delta) * 10) / 10));
+  isoGridSetStatus(`Measurement text for S${isoGridSelectedSegment + 1} is ${Math.round(segment.measurementScale * 100)}%. Drag any visible measurement label to move it.`);
+  isoGridRender();
+}
+
+function isoGridResetMeasurementLayout() {
+  const segment = isoGridCurrent().segments[isoGridSelectedSegment];
+  if (!segment) return;
+  segment.measurementScale = 1;
+  segment.measureLabelOffset = { x: 0, y: 0 };
+  segment.riseLabelOffset = { x: 0, y: 0 };
+  segment.runLabelOffset = { x: 0, y: 0 };
+  isoGridSetStatus(`Measurement layout for S${isoGridSelectedSegment + 1} reset. Drag a label to reposition it or use DIM − / DIM + to resize.`);
+  isoGridRender();
+}
+
 function isoGridRender() {
   const scene = $('isoTapScene');
   const svg = $('isoTapSvg');
@@ -989,18 +1010,22 @@ function isoGridRender() {
     const mx = (d1.x + d2.x) / 2;
     const my = (d1.y + d2.y) / 2;
     const dimension = isoGridSegmentLabel(segment);
+    const measurementScale = Math.max(0.6, Math.min(1.4, Number(segment.measurementScale) || 1));
+    const measureLabelOffset = segment.measureLabelOffset || { x: 0, y: 0 };
+    const riseLabelOffset = segment.riseLabelOffset || { x: 0, y: 0 };
+    const runLabelOffset = segment.runLabelOffset || { x: 0, y: 0 };
     const pipeClass = index === isoGridSelectedSegment
       ? 'iso-tap-pipe selected'
       : segment.complete
         ? 'iso-tap-pipe complete'
         : 'iso-tap-pipe';
     const showSegmentMeasurements = isoGridMeasurementMode === 'ALL' || (isoGridMeasurementMode === 'AUTO' && index === isoGridSelectedSegment);
-    const dimensionMarkup = showSegmentMeasurements ? `<line x1="${a.x}" y1="${a.y}" x2="${d1.x}" y2="${d1.y}" class="iso-tap-witness"/><line x1="${b.x}" y1="${b.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-witness"/><line x1="${d1.x}" y1="${d1.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><rect x="${mx - 47}" y="${my - 9}" width="94" height="15" class="iso-tap-dim-bg" data-grid-measure="${index}"/><text x="${mx}" y="${my + 1}" class="iso-tap-dim-text" data-grid-measure="${index}" style="font-size:9px">${isoGridEsc(dimension)}</text>` : '';
+    const dimensionMarkup = showSegmentMeasurements ? `<line x1="${a.x}" y1="${a.y}" x2="${d1.x}" y2="${d1.y}" class="iso-tap-witness"/><line x1="${b.x}" y1="${b.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-witness"/><line x1="${d1.x}" y1="${d1.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><rect x="${mx + measureLabelOffset.x - 47 * measurementScale}" y="${my + measureLabelOffset.y - 9 * measurementScale}" width="${94 * measurementScale}" height="${15 * measurementScale}" rx="${3 * measurementScale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-measure="${index}"/><text x="${mx + measureLabelOffset.x}" y="${my + measureLabelOffset.y + measurementScale}" class="iso-tap-dim-text iso-movable-measure" data-grid-measure="${index}" style="font-size:${9 * measurementScale}px">${isoGridEsc(dimension)}</text>` : '';
     const leftX = Math.max(26, Math.min(a.x, b.x) - 34); const topY = Math.min(a.y, b.y); const bottomY = Math.max(a.y, b.y); const midY = (topY + bottomY) / 2; const leftEnd = a.x <= b.x ? a : b; const rightEnd = a.x <= b.x ? b : a; const runY = Math.min(ISO_GRID_HEIGHT - 28, Math.max(a.y, b.y) + 34); const runMidX = (leftEnd.x + rightEnd.x) / 2;
     const offsetMath = isoGridOffsetMath(segment);
     let offsetGuideMarkup = '';
-    let riseMarkup = showSegmentMeasurements && segment.riseMeasure ? `<g class="iso-offset-callout"><line x1="${leftX}" y1="${topY}" x2="${leftX}" y2="${bottomY}" class="iso-tap-dim iso-offset-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><line x1="${leftX + 8}" y1="${topY}" x2="${a.y <= b.y ? a.x : b.x}" y2="${topY}" class="iso-tap-witness iso-offset-witness"/><line x1="${leftX + 8}" y1="${bottomY}" x2="${a.y >= b.y ? a.x : b.x}" y2="${bottomY}" class="iso-tap-witness iso-offset-witness"/><rect x="${leftX - 31}" y="${midY - 10}" width="62" height="18" class="iso-tap-dim-bg" data-grid-rise="${index}"/><text x="${leftX}" y="${midY + 2}" class="iso-tap-dim-text" data-grid-rise="${index}" style="font-size:10px">${isoGridEsc(segment.riseMeasure)}</text></g>` : '';
-    let runMarkup = showSegmentMeasurements && segment.runMeasure ? `<g class="iso-offset-callout"><line x1="${leftEnd.x}" y1="${runY}" x2="${rightEnd.x}" y2="${runY}" class="iso-tap-dim iso-offset-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><line x1="${leftEnd.x}" y1="${leftEnd.y}" x2="${leftEnd.x}" y2="${runY - 8}" class="iso-tap-witness iso-offset-witness"/><line x1="${rightEnd.x}" y1="${rightEnd.y}" x2="${rightEnd.x}" y2="${runY - 8}" class="iso-tap-witness iso-offset-witness"/><rect x="${runMidX - 31}" y="${runY - 10}" width="62" height="18" class="iso-tap-dim-bg" data-grid-run="${index}"/><text x="${runMidX}" y="${runY + 2}" class="iso-tap-dim-text" data-grid-run="${index}" style="font-size:10px">${isoGridEsc(segment.runMeasure)}</text></g>` : '';
+    let riseMarkup = showSegmentMeasurements && segment.riseMeasure ? `<g class="iso-offset-callout"><line x1="${leftX}" y1="${topY}" x2="${leftX}" y2="${bottomY}" class="iso-tap-dim iso-offset-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><line x1="${leftX + 8}" y1="${topY}" x2="${a.y <= b.y ? a.x : b.x}" y2="${topY}" class="iso-tap-witness iso-offset-witness"/><line x1="${leftX + 8}" y1="${bottomY}" x2="${a.y >= b.y ? a.x : b.x}" y2="${bottomY}" class="iso-tap-witness iso-offset-witness"/><rect x="${leftX + riseLabelOffset.x - 31 * measurementScale}" y="${midY + riseLabelOffset.y - 10 * measurementScale}" width="${62 * measurementScale}" height="${18 * measurementScale}" rx="${3 * measurementScale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-rise="${index}"/><text x="${leftX + riseLabelOffset.x}" y="${midY + riseLabelOffset.y + 2 * measurementScale}" class="iso-tap-dim-text iso-movable-measure" data-grid-rise="${index}" style="font-size:${10 * measurementScale}px">${isoGridEsc(segment.riseMeasure)}</text></g>` : '';
+    let runMarkup = showSegmentMeasurements && segment.runMeasure ? `<g class="iso-offset-callout"><line x1="${leftEnd.x}" y1="${runY}" x2="${rightEnd.x}" y2="${runY}" class="iso-tap-dim iso-offset-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><line x1="${leftEnd.x}" y1="${leftEnd.y}" x2="${leftEnd.x}" y2="${runY - 8}" class="iso-tap-witness iso-offset-witness"/><line x1="${rightEnd.x}" y1="${rightEnd.y}" x2="${rightEnd.x}" y2="${runY - 8}" class="iso-tap-witness iso-offset-witness"/><rect x="${runMidX + runLabelOffset.x - 31 * measurementScale}" y="${runY + runLabelOffset.y - 10 * measurementScale}" width="${62 * measurementScale}" height="${18 * measurementScale}" rx="${3 * measurementScale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-run="${index}"/><text x="${runMidX + runLabelOffset.x}" y="${runY + runLabelOffset.y + 2 * measurementScale}" class="iso-tap-dim-text iso-movable-measure" data-grid-run="${index}" style="font-size:${10 * measurementScale}px">${isoGridEsc(segment.runMeasure)}</text></g>` : '';
     if (isoGridView === 'ISO' && offsetMath && segment.offsetAuto && (isoGridMeasurementMode === 'ALL' || index === isoGridSelectedSegment)) {
       const basis = isoGridOffsetDirectionBasis(segment);
       const pixelsPerInch = Number(segment.offsetPixelsPerInch) > 0 ? Number(segment.offsetPixelsPerInch) : isoGridMeasuredPixelsPerInch(segment);
@@ -1047,11 +1072,71 @@ function isoGridRender() {
   if (firstRunCapture) firstRunCapture.classList.toggle('active', isoGridMode === 'LINE' && drawing.segments.length === 0);
   svg.querySelectorAll('[data-grid-measure]').forEach(element => {
     element.addEventListener('click', event => {
-      event.preventDefault(); event.stopPropagation(); const index = +element.dataset.gridMeasure; isoGridSelectSegment(index); setTimeout(isoGridQuickEditMeasurement, 0);
+      event.preventDefault(); event.stopPropagation(); if (Date.now() < isoGridMeasurementDragUntil) return; const index = +element.dataset.gridMeasure; isoGridSelectSegment(index); setTimeout(isoGridQuickEditMeasurement, 0);
     });
   });
-  svg.querySelectorAll('[data-grid-rise]').forEach(element => { element.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); const index = +element.dataset.gridRise; isoGridSelectSegment(index); setTimeout(isoGridQuickEditRiseMeasurement, 0); }); });
-  svg.querySelectorAll('[data-grid-run]').forEach(element => { element.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); const index = +element.dataset.gridRun; isoGridSelectSegment(index); setTimeout(isoGridQuickEditRunMeasurement, 0); }); });
+  svg.querySelectorAll('[data-grid-rise]').forEach(element => { element.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); if (Date.now() < isoGridMeasurementDragUntil) return; const index = +element.dataset.gridRise; isoGridSelectSegment(index); setTimeout(isoGridQuickEditRiseMeasurement, 0); }); });
+  svg.querySelectorAll('[data-grid-run]').forEach(element => { element.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); if (Date.now() < isoGridMeasurementDragUntil) return; const index = +element.dataset.gridRun; isoGridSelectSegment(index); setTimeout(isoGridQuickEditRunMeasurement, 0); }); });
+  const bindMeasurementDrag = (selector, datasetKey, offsetKey) => {
+    svg.querySelectorAll(selector).forEach(element => {
+      element.addEventListener('pointerdown', event => {
+        if (event.pointerType === 'touch' && isoGridPinchActive) return;
+        const index = +element.dataset[datasetKey];
+        const segment = drawing.segments[index];
+        if (!segment) return;
+        const original = segment[offsetKey] || { x: 0, y: 0 };
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const pointerId = event.pointerId;
+        let dragging = false;
+        const move = moveEvent => {
+          if (moveEvent.pointerId !== pointerId) return;
+          const dx = (moveEvent.clientX - startX) / isoGridZoom;
+          const dy = (moveEvent.clientY - startY) / isoGridZoom;
+          if (!dragging && Math.hypot(dx, dy) < 5) return;
+          dragging = true;
+          isoGridMeasurementDragUntil = Date.now() + 700;
+          isoGridPanSuppressUntil = Date.now() + 700;
+          const group = svg.querySelectorAll(`[${selector.slice(1, -1)}="${index}"]`);
+          group.forEach(item => item.setAttribute('transform', `translate(${dx} ${dy})`));
+          moveEvent.preventDefault();
+          moveEvent.stopPropagation();
+        };
+        const up = upEvent => {
+          if (upEvent.pointerId !== pointerId) return;
+          cleanup();
+          if (!dragging) return;
+          const dx = (upEvent.clientX - startX) / isoGridZoom;
+          const dy = (upEvent.clientY - startY) / isoGridZoom;
+          segment[offsetKey] = { x: original.x + dx, y: original.y + dy };
+          isoGridMeasurementDragUntil = Date.now() + 700;
+          isoGridTapGuard = { until: Date.now() + 700 };
+          isoGridSelectedSegment = index;
+          isoGridSelectedSymbol = -1;
+          isoGridSetStatus(`Measurement moved for S${index + 1}. Drag it again anytime, or use DIM − / DIM + to resize it.`);
+          isoGridRender();
+          upEvent.preventDefault();
+          upEvent.stopPropagation();
+        };
+        const cancel = cancelEvent => {
+          if (cancelEvent.pointerId !== pointerId) return;
+          cleanup();
+          if (dragging) isoGridRender();
+        };
+        const cleanup = () => {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+          window.removeEventListener('pointercancel', cancel);
+        };
+        window.addEventListener('pointermove', move, { passive: false });
+        window.addEventListener('pointerup', up);
+        window.addEventListener('pointercancel', cancel);
+      });
+    });
+  };
+  bindMeasurementDrag('[data-grid-measure]', 'gridMeasure', 'measureLabelOffset');
+  bindMeasurementDrag('[data-grid-rise]', 'gridRise', 'riseLabelOffset');
+  bindMeasurementDrag('[data-grid-run]', 'gridRun', 'runLabelOffset');
   svg.querySelectorAll('[data-grid-segment]').forEach(element => {
     if (element.classList.contains('iso-end-handle')) return;
     let branchTouchStart = null;
@@ -1897,7 +1982,7 @@ function initIsoDrawing() {
   const viewport = $('isoTapViewport');
   let panStart = null;
   scene.addEventListener('touchstart', event => {
-    if (!viewport || event.touches.length !== 1 || isoGridPinchActive) {
+    if (!viewport || event.touches.length !== 1 || isoGridPinchActive || event.target.closest?.('[data-grid-measure], [data-grid-rise], [data-grid-run]')) {
       panStart = null;
       return;
     }

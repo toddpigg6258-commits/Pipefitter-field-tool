@@ -2169,3 +2169,7 @@ th {
 .iso-mobile-zoom-controls { position:absolute; top:10px; right:10px; z-index:10; display:flex; gap:6px; }
 .iso-mobile-zoom-controls button { width:44px; height:44px; padding:0; border:2px solid #111827; border-radius:8px; background:rgba(255,255,255,.96); color:#111827; font-size:28px; font-weight:900; line-height:1; box-shadow:0 2px 8px rgba(15,23,42,.18); touch-action:manipulation; }
 @media (min-width:761px) { .iso-mobile-zoom-controls { display:none; } }
+
+/* Measurement callouts can be dragged independently of the print pan gesture. */
+.iso-movable-measure { touch-action:none; cursor:grab; }
+.iso-movable-measure:active { cursor:grabbing; }
