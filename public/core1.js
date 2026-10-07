@@ -220,6 +220,9 @@ function cFraction(n, d) {
   cHist = 'Added ' + n + '/' + d + ' inch';
   cRender();
 }
+function cOpenFractionPad() { const pad = document.getElementById('calcFractionPad'); if (pad) pad.classList.remove('hidden'); }
+function cCloseFractionPad() { const pad = document.getElementById('calcFractionPad'); if (pad) pad.classList.add('hidden'); }
+function cPickFraction(n, d) { cFraction(n, d); cCloseFractionPad(); }
 function cApply(a, b, op) {
   if (op === '+') return a + b;
   if (op === '-') return a - b;

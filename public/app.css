@@ -2335,3 +2335,13 @@ html, body { width:100%; max-width:100%; overflow-x:hidden; }
     min-height:500px;
   }
 }
+
+/* REV 43 — field-friendly calculator fraction picker */
+.calc-fraction-pad{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;padding:12px 10px calc(12px + env(safe-area-inset-bottom));background:rgba(2,6,12,.72);backdrop-filter:blur(4px)}
+.calc-fraction-card{width:min(520px,100%);padding:12px;border:2px solid #475569;border-radius:18px;background:#111b2c;box-shadow:0 18px 50px #0009}
+.calc-fraction-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;color:#f8fafc;font-size:14px}
+.calc-fraction-head button{width:42px;height:42px;padding:0;border-radius:50%}
+.calc-sixteenth-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.calc-sixteenth-grid button{min-height:54px;padding:7px 4px;border-radius:12px;background:#1b2940;color:#fff;font-size:18px}
+.calc-custom-fraction{width:100%;min-height:46px;margin-top:9px;background:#12304a;color:#bae6fd}
+@media(max-width:480px){#calc .unit-row .frac-key{font-size:9px;letter-spacing:.02em}.calc-fraction-card{padding:10px}.calc-sixteenth-grid{gap:6px}.calc-sixteenth-grid button{min-height:50px;font-size:17px}}

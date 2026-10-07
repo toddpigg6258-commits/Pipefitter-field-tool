@@ -17,7 +17,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Pipefitter Field Pro</title>
-    <link rel="stylesheet" href="./app.css?v=65" />
+    <link rel="stylesheet" href="./app.css?v=66" />
   </head>
   <body>
     <div class="app">
@@ -53,7 +53,7 @@
           <div class="unit-row">
             <button class="unit" onclick="cFeet()">FEET</button
             ><button class="unit" onclick="cInch()">INCH</button
-            ><button class="frac-key" onclick="cSlash()">/</button
+            ><button class="frac-key" onclick="cOpenFractionPad()">FRACTION</button
             ><button onclick="cToggleSign()">+/−</button
             ><button onclick="cBack()">⌫</button
             ><button class="danger" onclick="cClear()">CLEAR</button>
@@ -70,6 +70,19 @@
             ><button onclick="cFraction(3, 4)">3/4</button
             ><button onclick="cFraction(7, 8)">7/8</button>
               </div>
+            </div>
+          </div>
+          <div id="calcFractionPad" class="calc-fraction-pad hidden" role="dialog" aria-modal="true" aria-label="Choose inch fraction">
+            <div class="calc-fraction-card">
+              <div class="calc-fraction-head"><b>CHOOSE INCH FRACTION</b><button type="button" onclick="cCloseFractionPad()">✕</button></div>
+              <div class="calc-sixteenth-grid">
+                <button onclick="cPickFraction(1,16)">1/16</button><button onclick="cPickFraction(1,8)">1/8</button><button onclick="cPickFraction(3,16)">3/16</button>
+                <button onclick="cPickFraction(1,4)">1/4</button><button onclick="cPickFraction(5,16)">5/16</button><button onclick="cPickFraction(3,8)">3/8</button>
+                <button onclick="cPickFraction(7,16)">7/16</button><button onclick="cPickFraction(1,2)">1/2</button><button onclick="cPickFraction(9,16)">9/16</button>
+                <button onclick="cPickFraction(5,8)">5/8</button><button onclick="cPickFraction(11,16)">11/16</button><button onclick="cPickFraction(3,4)">3/4</button>
+                <button onclick="cPickFraction(13,16)">13/16</button><button onclick="cPickFraction(7,8)">7/8</button><button onclick="cPickFraction(15,16)">15/16</button>
+              </div>
+              <button class="calc-custom-fraction" onclick="cCloseFractionPad(); cSlash()">TYPE MY OWN N / D</button>
             </div>
           </div>
           <div class="precision">
@@ -857,7 +870,7 @@
     <script src="./field-reference.js?v=46"></script>
     <script src="./tubing.js?v=3"></script>
     <script src="./data.js?v=35"></script>
-    <script src="./core1.js?v=35"></script>
+    <script src="./core1.js?v=36"></script>
     <script src="./core2.js?v=41"></script>
     <script src="./saddle.js?v=38"></script>
     <script src="./takeoffs.js?v=35"></script>
