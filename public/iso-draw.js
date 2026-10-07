@@ -566,7 +566,7 @@ function isoGridIsTee(type) {
   return ISO_GRID_TEE_TYPES.includes(type);
 }
 
-const ISO_GRID_FLANGE_TYPES = ['FLANGE', 'WN_FLANGE', 'SO_FLANGE', 'SW_FLANGE', 'BLIND_FLANGE'];
+const ISO_GRID_FLANGE_TYPES = ['FLANGE', 'WN_FLANGE', 'SO_FLANGE', 'SW_FLANGE', 'BLIND_FLANGE', 'END_FLANGE'];
 
 function isoGridIsFlange(type) {
   return ISO_GRID_FLANGE_TYPES.includes(type);
@@ -718,6 +718,7 @@ function isoGridSymbolName(type) {
     SO_FLANGE: 'SLIP-ON FLANGE',
     SW_FLANGE: 'SOCKET WELD FLANGE',
     BLIND_FLANGE: 'BLIND FLANGE',
+    END_FLANGE: 'END FLANGE',
     GATE: 'GATE VALVE',
     GLOBE: 'GLOBE VALVE',
     PLUG: 'PLUG VALVE',
@@ -802,6 +803,7 @@ function isoGridSymbolMarkup(symbol, index) {
   else if (type === 'CONC_REDUCER') shape = `<path d="M -24 0 H -8 L 18 -9 M -8 0 L 18 9" ${line}/>`;
   else if (type === 'ECC_REDUCER') shape = `<path d="M -24 0 H -8 L 18 -8 M -8 0 H 18" ${line}/>`;
   else if (type === 'UNION') shape = `<path d="M -24 0 H -8 M -5 -13 V 13 M 3 -13 V 13 M 6 0 H 24" ${line}/>`;
+  else if (type === 'END_FLANGE') shape = `<path d="M -5 0 H 5" fill="none" stroke="white" stroke-width="8" vector-effect="non-scaling-stroke"/><path d="M 0 -15 V 15" ${line}/>`;
   else if (['FLANGE', 'WN_FLANGE', 'SO_FLANGE', 'SW_FLANGE', 'BLIND_FLANGE'].includes(type)) shape = `<path d="M -8 0 H 8" fill="none" stroke="white" stroke-width="8" vector-effect="non-scaling-stroke"/><path d="M -4 -15 V 15 M 4 -15 V 15" ${line}/>`;
   else if (type === 'GATE') shape = `<path d="M -27 0 H -14 L 0 -11 L 14 0 L 0 11 L -14 0 H 27" ${line}/>`;
   else if (type === 'GLOBE') shape = `<path d="M -27 0 H -14 L 0 -10 L 14 0 L 0 10 L -14 0 H 27" ${line}/><circle cx="0" cy="0" r="4" fill="#111827"/>`;
@@ -1402,6 +1404,20 @@ function isoGridTap(event, bypassTapGuard = false) {
   if (!point) return;
   const drawing = isoGridCurrent();
   if (isoGridMode !== 'LINE') {
+    if (isoGridMode === 'END_FLANGE') {
+      const nearest = isoGridNearestSegment(point, 32);
+      if (nearest) {
+        const segment = drawing.segments[nearest.index];
+        const distanceA = segment ? Math.hypot(point.x - segment.a.x, point.y - segment.a.y) : Infinity;
+        const distanceB = segment ? Math.hypot(point.x - segment.b.x, point.y - segment.b.y) : Infinity;
+        if (Math.min(distanceA, distanceB) <= 24) {
+          isoGridInstallFlangeAtEndpoint(nearest.index, distanceA <= distanceB ? 'a' : 'b');
+          return;
+        }
+      }
+      isoGridSetStatus('END FLANGE: tap the end point of a pipe run. It installs as one flange line and does not split the pipe.');
+      return;
+    }
     if (isoGridBreaksPipe(isoGridMode)) {
       const nearest = isoGridNearestSegment(point);
       if (nearest && isoGridIsFlange(isoGridMode)) {
