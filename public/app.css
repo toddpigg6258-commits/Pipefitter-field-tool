@@ -2410,3 +2410,19 @@ html, body { width:100%; max-width:100%; overflow-x:hidden; }
   }
   .iso-tap-hit { stroke-width:30; }
 }
+
+
+/* REV 47 — keep the full quick-fraction bank visible above calculator precision */
+@media (max-width:480px) {
+  #calc .quick-frac.side {
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:5px;
+  }
+  #calc .quick-frac.side button {
+    height:36px;
+    min-height:36px;
+    max-height:36px;
+    font-size:11px;
+  }
+  #calc .calc-fraction-side { margin-top:5px; }
+}
