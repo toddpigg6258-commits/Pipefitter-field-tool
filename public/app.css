@@ -2394,3 +2394,19 @@ html, body { width:100%; max-width:100%; overflow-x:hidden; }
     font-size:10px;
   }
 }
+
+
+/* REV 46 — larger quick fractions + easier pipe tap target */
+@media (max-width:480px) {
+  #calc .quick-frac.side {
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:6px;
+  }
+  #calc .quick-frac.side button {
+    height:40px;
+    min-height:40px;
+    max-height:40px;
+    font-size:12px;
+  }
+  .iso-tap-hit { stroke-width:30; }
+}
