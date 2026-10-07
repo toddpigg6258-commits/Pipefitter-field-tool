@@ -369,16 +369,14 @@ function isoGridPlaceModeOnSegment(index, event) {
   return true;
 }
 
-function isoGridStartBranchOnSegment(index, event) {
+function isoGridStartBranchAtPoint(index, rawPoint) {
   const drawing = isoGridCurrent();
   const segment = drawing.segments[index];
-  if (!segment || isoGridMode !== 'LINE') return false;
+  if (!segment || isoGridMode !== 'LINE' || !rawPoint) return false;
   const previousLastPoint = isoGridLastPoint ? { ...isoGridLastPoint } : { ...segment.b };
-  const rawPoint = isoGridEventPoint(event, false);
-  if (!rawPoint) return false;
   const point = isoGridSnapPointToSegmentGrid(segment, rawPoint, true, true);
   if (!isoGridSplitSegmentAt(index, point, 'TEE')) {
-    isoGridSetStatus('Touch inside the pipe leg, away from an existing endpoint, to start a branch.');
+    isoGridSetStatus('Tap the body of the pipe, away from an endpoint, to install a tee and split the run into two sections.');
     return true;
   }
   const tee = drawing.symbols[isoGridSelectedSymbol];
@@ -386,9 +384,14 @@ function isoGridStartBranchOnSegment(index, event) {
   if (tee?.splitUndo) tee.splitUndo.lastPoint = previousLastPoint;
   const branchPoint = tee?.pipePoint || point;
   isoGridLastPoint = { ...branchPoint };
-  isoGridSetStatus('Branch start set on the pipe. A tee is shown at the touch point; tap the next grid point to draw the branch. Select the tee to rotate its bullhead.');
+  isoGridSetStatus('TEE installed. The original pipe is now two sections at the tee; tap the next grid point to draw the branch as another section.');
   isoGridRender();
   return true;
+}
+
+function isoGridStartBranchOnSegment(index, event) {
+  const rawPoint = isoGridEventPoint(event, false);
+  return isoGridStartBranchAtPoint(index, rawPoint);
 }
 
 function isoGridSegmentLength(segment) {
@@ -2200,8 +2203,9 @@ function initIsoDrawing() {
       Math.hypot(nearest.point.x - segment.b.x, nearest.point.y - segment.b.y)
     );
     if (nearEnd < 12) return;
-    const teeEvent = { ...tapEvent, clientX: touch.clientX, clientY: touch.clientY };
-    if (isoGridStartBranchOnSegment(nearest.index, teeEvent)) {
+    // Use the geometrically projected point directly. This avoids iPhone/Safari
+    // DOM hit-target differences and guarantees a pipe-body tap creates the split.
+    if (isoGridStartBranchAtPoint(nearest.index, nearest.point)) {
       isoGridTapGuard = { until: Date.now() + 700 };
       isoGridPanSuppressUntil = Date.now() + 700;
       event.preventDefault();
