@@ -2345,3 +2345,37 @@ html, body { width:100%; max-width:100%; overflow-x:hidden; }
 .calc-sixteenth-grid button{min-height:54px;padding:7px 4px;border-radius:12px;background:#1b2940;color:#fff;font-size:18px}
 .calc-custom-fraction{width:100%;min-height:46px;margin-top:9px;background:#12304a;color:#bae6fd}
 @media(max-width:480px){#calc .unit-row .frac-key{font-size:9px;letter-spacing:.02em}.calc-fraction-card{padding:10px}.calc-sixteenth-grid{gap:6px}.calc-sixteenth-grid button{min-height:50px;font-size:17px}}
+
+
+/* REV 44 — calculator: larger display, compact phone keypad */
+@media (max-width:480px) {
+  #calc .calc-shell { justify-content:flex-start; }
+  #calc .calc-screen {
+    flex:0 0 132px;
+    min-height:132px;
+    padding:12px 14px;
+    margin-bottom:8px;
+  }
+  #calc .calc-history { min-height:22px; font-size:12px; }
+  #calc .calc-value { font-size:clamp(40px,13vw,54px); line-height:1.08; }
+  #calc .calc-sub { font-size:11px; margin-top:5px; }
+  #calc .calc-entry-grid { flex:0 0 auto; gap:6px; }
+  #calc .calc-main-keys { flex:0 0 auto; }
+  #calc .keypad {
+    flex:0 0 auto;
+    grid-template-rows:repeat(4,54px);
+    gap:6px;
+  }
+  #calc .keypad button {
+    height:54px;
+    min-height:54px;
+    max-height:54px;
+    border-radius:24px;
+    font-size:22px;
+  }
+  #calc .keypad .op { font-size:24px; }
+  #calc .unit-row { margin-top:6px; gap:6px; }
+  #calc .unit-row button { min-height:36px; max-height:36px; }
+  #calc .quick-frac.side button { height:32px; min-height:32px; max-height:32px; }
+  #calc .precision { margin-top:5px; min-height:30px; }
+}
