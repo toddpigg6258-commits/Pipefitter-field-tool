@@ -623,6 +623,8 @@
                 <button type="button" id="isoQuickRunButton" onclick="isoGridQuickEditRunMeasurement()">RUN: SET</button>
                 <button type="button" onclick="isoGridAdjustMeasurementSize(-0.1)">DIM −</button>
                 <button type="button" onclick="isoGridAdjustMeasurementSize(0.1)">DIM +</button>
+                <button type="button" onclick="isoGridFlipMeasurementSide()">FLIP DIM</button>
+                <button type="button" onclick="isoGridToggleMeasurementRotation()">ROTATE DIM</button>
                 <button type="button" onclick="isoGridResetMeasurementLayout()">RESET DIM</button>
               </div>
               <div id="isoQuickFittingControls" class="iso-drawing-quick-row hidden"><button onclick="isoGridRotateSelected(-15)">↺ 15°</button><button onclick="isoGridRotateSelected(15)">15° ↻</button><button onclick="isoGridRotateSelected(90)">ROTATE 90°</button><button id="isoQuickSnapButton" onclick="isoGridSnapSelectedSymbol()">SNAP TO PIPE</button></div>
@@ -861,7 +863,7 @@
     <script src="./takeoffs.js?v=35"></script>
     <script src="./torque.js?v=35"></script>
     <script src="./iso.js?v=37"></script>
-    <script src="./iso-draw.js?v=69"></script>
+    <script src="./iso-draw.js?v=70"></script>
     <script src="./fusion.js?v=2"></script>
     <script src="./tools.js?v=35"></script>
     <script src="./init.js?v=35"></script>

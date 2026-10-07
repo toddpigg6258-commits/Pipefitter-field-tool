@@ -960,6 +960,36 @@ function isoGridResetMeasurementLayout() {
   isoGridRender();
 }
 
+function isoGridFlipMeasurementSide() {
+  const segment = isoGridCurrent().segments[isoGridSelectedSegment];
+  if (!segment) return;
+  const a = segment.a?.isoDisplayPoint && isoGridView === 'ISO' ? segment.a.isoDisplayPoint : isoGridToViewPoint(segment.a);
+  const b = segment.b?.isoDisplayPoint && isoGridView === 'ISO' ? segment.b.isoDisplayPoint : isoGridToViewPoint(segment.b);
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const length = Math.hypot(dx, dy) || 1;
+  const nx = -dy / length;
+  const ny = dx / length;
+  const midX = (a.x + b.x) / 2;
+  const midY = (a.y + b.y) / 2;
+  const autoSide = (nx * (midX - ISO_GRID_WIDTH / 2) + ny * (midY - ISO_GRID_HEIGHT / 2)) >= 0 ? 1 : -1;
+  const currentSide = segment.dimensionSide === 1 || segment.dimensionSide === -1 ? segment.dimensionSide : autoSide;
+  segment.dimensionSide = -currentSide;
+  segment.measureLabelOffset = { x: 0, y: 0 };
+  isoGridSetStatus(`Dimension for S${isoGridSelectedSegment + 1} flipped to the opposite side of the pipe.`);
+  isoGridRender();
+}
+
+function isoGridToggleMeasurementRotation() {
+  const segment = isoGridCurrent().segments[isoGridSelectedSegment];
+  if (!segment) return;
+  segment.measurementRotationMode = segment.measurementRotationMode === 'HORIZONTAL' ? 'AUTO' : 'HORIZONTAL';
+  isoGridSetStatus(segment.measurementRotationMode === 'HORIZONTAL'
+    ? `Dimension for S${isoGridSelectedSegment + 1} is horizontal for easy reading.`
+    : `Dimension for S${isoGridSelectedSegment + 1} follows the pipe angle and stays upright.`);
+  isoGridRender();
+}
+
 function isoGridRender() {
   const scene = $('isoTapScene');
   const svg = $('isoTapSvg');
@@ -1005,10 +1035,18 @@ function isoGridRender() {
     const nx = -dy / length;
     const ny = dx / length;
     const offset = 28;
-    const d1 = { x: a.x + nx * offset, y: a.y + ny * offset };
-    const d2 = { x: b.x + nx * offset, y: b.y + ny * offset };
+    const pipeMidX = (a.x + b.x) / 2;
+    const pipeMidY = (a.y + b.y) / 2;
+    const autoDimensionSide = (nx * (pipeMidX - ISO_GRID_WIDTH / 2) + ny * (pipeMidY - ISO_GRID_HEIGHT / 2)) >= 0 ? 1 : -1;
+    const dimensionSide = segment.dimensionSide === 1 || segment.dimensionSide === -1 ? segment.dimensionSide : autoDimensionSide;
+    const d1 = { x: a.x + nx * offset * dimensionSide, y: a.y + ny * offset * dimensionSide };
+    const d2 = { x: b.x + nx * offset * dimensionSide, y: b.y + ny * offset * dimensionSide };
     const mx = (d1.x + d2.x) / 2;
     const my = (d1.y + d2.y) / 2;
+    let dimensionTextAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+    while (dimensionTextAngle > 90) dimensionTextAngle -= 180;
+    while (dimensionTextAngle < -90) dimensionTextAngle += 180;
+    if (segment.measurementRotationMode === 'HORIZONTAL') dimensionTextAngle = 0;
     const dimension = isoGridSegmentLabel(segment);
     const measurementScale = Math.max(0.6, Math.min(1.4, Number(segment.measurementScale) || 1));
     const measureLabelOffset = segment.measureLabelOffset || { x: 0, y: 0 };
@@ -1020,7 +1058,7 @@ function isoGridRender() {
         ? 'iso-tap-pipe complete'
         : 'iso-tap-pipe';
     const showSegmentMeasurements = isoGridMeasurementMode === 'ALL' || (isoGridMeasurementMode === 'AUTO' && index === isoGridSelectedSegment);
-    const dimensionMarkup = showSegmentMeasurements ? `<line x1="${a.x}" y1="${a.y}" x2="${d1.x}" y2="${d1.y}" class="iso-tap-witness"/><line x1="${b.x}" y1="${b.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-witness"/><line x1="${d1.x}" y1="${d1.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><rect x="${mx + measureLabelOffset.x - 47 * measurementScale}" y="${my + measureLabelOffset.y - 9 * measurementScale}" width="${94 * measurementScale}" height="${15 * measurementScale}" rx="${3 * measurementScale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-measure="${index}"/><text x="${mx + measureLabelOffset.x}" y="${my + measureLabelOffset.y + measurementScale}" class="iso-tap-dim-text iso-movable-measure" data-grid-measure="${index}" style="font-size:${9 * measurementScale}px">${isoGridEsc(dimension)}</text>` : '';
+    const dimensionMarkup = showSegmentMeasurements ? `<line x1="${a.x}" y1="${a.y}" x2="${d1.x}" y2="${d1.y}" class="iso-tap-witness"/><line x1="${b.x}" y1="${b.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-witness"/><line x1="${d1.x}" y1="${d1.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><g transform="rotate(${dimensionTextAngle} ${mx + measureLabelOffset.x} ${my + measureLabelOffset.y})"><rect x="${mx + measureLabelOffset.x - 47 * measurementScale}" y="${my + measureLabelOffset.y - 9 * measurementScale}" width="${94 * measurementScale}" height="${15 * measurementScale}" rx="${3 * measurementScale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-measure="${index}"/><text x="${mx + measureLabelOffset.x}" y="${my + measureLabelOffset.y + measurementScale}" class="iso-tap-dim-text iso-movable-measure" data-grid-measure="${index}" style="font-size:${9 * measurementScale}px">${isoGridEsc(dimension)}</text></g>` : '';
     const leftX = Math.max(26, Math.min(a.x, b.x) - 34); const topY = Math.min(a.y, b.y); const bottomY = Math.max(a.y, b.y); const midY = (topY + bottomY) / 2; const leftEnd = a.x <= b.x ? a : b; const rightEnd = a.x <= b.x ? b : a; const runY = Math.min(ISO_GRID_HEIGHT - 28, Math.max(a.y, b.y) + 34); const runMidX = (leftEnd.x + rightEnd.x) / 2;
     const offsetMath = isoGridOffsetMath(segment);
     let offsetGuideMarkup = '';
@@ -1079,58 +1117,75 @@ function isoGridRender() {
   svg.querySelectorAll('[data-grid-run]').forEach(element => { element.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); if (Date.now() < isoGridMeasurementDragUntil) return; const index = +element.dataset.gridRun; isoGridSelectSegment(index); setTimeout(isoGridQuickEditRunMeasurement, 0); }); });
   const bindMeasurementDrag = (selector, datasetKey, offsetKey) => {
     svg.querySelectorAll(selector).forEach(element => {
-      element.addEventListener('pointerdown', event => {
-        if (event.pointerType === 'touch' && isoGridPinchActive) return;
+      const beginDrag = (startX, startY, moveTarget, moveName, endName, cancelName, matchEvent, pointFromEvent) => {
         const index = +element.dataset[datasetKey];
         const segment = drawing.segments[index];
         if (!segment) return;
         const original = segment[offsetKey] || { x: 0, y: 0 };
-        const startX = event.clientX;
-        const startY = event.clientY;
-        const pointerId = event.pointerId;
         let dragging = false;
         const move = moveEvent => {
-          if (moveEvent.pointerId !== pointerId) return;
-          const dx = (moveEvent.clientX - startX) / isoGridZoom;
-          const dy = (moveEvent.clientY - startY) / isoGridZoom;
+          const point = pointFromEvent(moveEvent);
+          if (!point || !matchEvent(moveEvent)) return;
+          const dx = (point.clientX - startX) / isoGridZoom;
+          const dy = (point.clientY - startY) / isoGridZoom;
           if (!dragging && Math.hypot(dx, dy) < 5) return;
           dragging = true;
-          isoGridMeasurementDragUntil = Date.now() + 700;
-          isoGridPanSuppressUntil = Date.now() + 700;
-          const group = svg.querySelectorAll(`[${selector.slice(1, -1)}="${index}"]`);
-          group.forEach(item => item.setAttribute('transform', `translate(${dx} ${dy})`));
+          isoGridMeasurementDragUntil = Date.now() + 800;
+          isoGridPanSuppressUntil = Date.now() + 800;
           moveEvent.preventDefault();
           moveEvent.stopPropagation();
         };
-        const up = upEvent => {
-          if (upEvent.pointerId !== pointerId) return;
+        const finish = endEvent => {
+          const point = pointFromEvent(endEvent);
+          if (!point || !matchEvent(endEvent)) return;
           cleanup();
           if (!dragging) return;
-          const dx = (upEvent.clientX - startX) / isoGridZoom;
-          const dy = (upEvent.clientY - startY) / isoGridZoom;
+          const dx = (point.clientX - startX) / isoGridZoom;
+          const dy = (point.clientY - startY) / isoGridZoom;
           segment[offsetKey] = { x: original.x + dx, y: original.y + dy };
-          isoGridMeasurementDragUntil = Date.now() + 700;
-          isoGridTapGuard = { until: Date.now() + 700 };
+          isoGridMeasurementDragUntil = Date.now() + 800;
+          isoGridPanSuppressUntil = Date.now() + 800;
+          isoGridTapGuard = { until: Date.now() + 800 };
           isoGridSelectedSegment = index;
           isoGridSelectedSymbol = -1;
-          isoGridSetStatus(`Measurement moved for S${index + 1}. Drag it again anytime, or use DIM − / DIM + to resize it.`);
+          isoGridSetStatus(`Measurement moved for S${index + 1}. Drag it anytime; FLIP DIM changes sides and ROTATE DIM changes text orientation.`);
           isoGridRender();
-          upEvent.preventDefault();
-          upEvent.stopPropagation();
+          endEvent.preventDefault();
+          endEvent.stopPropagation();
         };
         const cancel = cancelEvent => {
-          if (cancelEvent.pointerId !== pointerId) return;
+          if (!matchEvent(cancelEvent)) return;
           cleanup();
-          if (dragging) isoGridRender();
         };
         const cleanup = () => {
-          window.removeEventListener('pointermove', move);
-          window.removeEventListener('pointerup', up);
-          window.removeEventListener('pointercancel', cancel);
+          moveTarget.removeEventListener(moveName, move);
+          moveTarget.removeEventListener(endName, finish);
+          moveTarget.removeEventListener(cancelName, cancel);
         };
-        window.addEventListener('pointermove', move, { passive: false });
-        window.addEventListener('pointerup', up);
-        window.addEventListener('pointercancel', cancel);
+        moveTarget.addEventListener(moveName, move, { passive: false });
+        moveTarget.addEventListener(endName, finish, { passive: false });
+        moveTarget.addEventListener(cancelName, cancel, { passive: false });
+      };
+
+      element.addEventListener('touchstart', event => {
+        if (event.touches.length !== 1 || isoGridPinchActive) return;
+        const touch = event.changedTouches[0];
+        if (!touch) return;
+        const touchId = touch.identifier;
+        const findTouch = e => Array.from(e.changedTouches || []).find(item => item.identifier === touchId)
+          || Array.from(e.touches || []).find(item => item.identifier === touchId)
+          || null;
+        beginDrag(touch.clientX, touch.clientY, window, 'touchmove', 'touchend', 'touchcancel',
+          e => !!findTouch(e), findTouch);
+        event.stopPropagation();
+      }, { passive: true });
+
+      element.addEventListener('pointerdown', event => {
+        if (event.pointerType === 'touch') return;
+        const pointerId = event.pointerId;
+        beginDrag(event.clientX, event.clientY, window, 'pointermove', 'pointerup', 'pointercancel',
+          e => e.pointerId === pointerId, e => e);
+        event.stopPropagation();
       });
     });
   };
