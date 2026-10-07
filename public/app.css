@@ -2379,3 +2379,18 @@ html, body { width:100%; max-width:100%; overflow-x:hidden; }
   #calc .quick-frac.side button { height:32px; min-height:32px; max-height:32px; }
   #calc .precision { margin-top:5px; min-height:30px; }
 }
+
+
+/* REV 45 — use calculator empty space for full sixteenth quick fractions */
+@media (max-width:480px) {
+  #calc .quick-frac.side {
+    grid-template-columns:repeat(8,minmax(0,1fr));
+    gap:5px;
+  }
+  #calc .quick-frac.side button {
+    height:34px;
+    min-height:34px;
+    max-height:34px;
+    font-size:10px;
+  }
+}
