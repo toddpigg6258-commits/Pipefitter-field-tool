@@ -344,6 +344,11 @@ function isoGridPlaceModeOnSegment(index, event) {
   const rawPoint = isoGridEventPoint(event, false);
   if (!rawPoint) return false;
   const point = isoGridSnapPointToSegmentGrid(segment, rawPoint, isoGridBreaksPipe(type), isoGridIsTee(type));
+  if (isoGridIsFlange(type)) {
+    const nearA = Math.hypot(point.x - segment.a.x, point.y - segment.a.y) < 8;
+    const nearB = Math.hypot(point.x - segment.b.x, point.y - segment.b.y) < 8;
+    if (nearA || nearB) return isoGridInstallFlangeAtEndpoint(index, nearA ? 'a' : 'b');
+  }
   if (isoGridBreaksPipe(type)) {
     if (!isoGridSplitSegmentAt(index, point, type)) {
       isoGridSetStatus('That pipe section is too short to split at an interior grid point. Add another pipe point or choose a longer section.');
@@ -556,6 +561,29 @@ const ISO_GRID_TEE_TYPES = ['TEE', 'TEE_UP', 'TEE_DOWN'];
 
 function isoGridIsTee(type) {
   return ISO_GRID_TEE_TYPES.includes(type);
+}
+
+const ISO_GRID_FLANGE_TYPES = ['FLANGE', 'WN_FLANGE', 'SO_FLANGE', 'SW_FLANGE', 'BLIND_FLANGE'];
+
+function isoGridIsFlange(type) {
+  return ISO_GRID_FLANGE_TYPES.includes(type);
+}
+
+function isoGridInstallFlangeAtEndpoint(segmentIndex, endpointKey) {
+  const drawing = isoGridCurrent();
+  const segment = drawing.segments[segmentIndex];
+  const point = segment?.[endpointKey];
+  if (!segment || !point || !isoGridIsFlange(isoGridMode)) return false;
+  const type = isoGridMode;
+  const rotation = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x) * 180 / Math.PI;
+  drawing.symbols.push({ ...point, type, rotation, snapped: true, auto: false, endpointFlange: true });
+  isoGridSelectedSymbol = drawing.symbols.length - 1;
+  isoGridSelectedSegment = -1;
+  isoGridReturnToLineMode();
+  isoGridTapGuard = { until: Date.now() + 700 };
+  isoGridSetStatus(`${isoGridSymbolName(type)} installed at the pipe endpoint. PIPE LINE mode is active again.`);
+  isoGridRender();
+  return true;
 }
 
 function isoGridTeeRunRotation(symbol) {
@@ -1254,6 +1282,7 @@ function isoGridRender() {
     });
     handle.addEventListener('pointerdown', event => {
       if (event.pointerType === 'touch' && isoGridPinchActive) return;
+      if (isoGridMode !== 'LINE' && !isoGridIsFlange(isoGridMode)) return;
       const segmentIndex = +handle.dataset.gridSegment;
       const endpointKey = handle.dataset.gridEnd;
       const startX = event.clientX;
@@ -1282,7 +1311,11 @@ function isoGridRender() {
         if (!dragging && !canceled && !pinchBlocked) {
           upEvent.preventDefault();
           upEvent.stopPropagation();
-          isoGridActivateEndpoint(segmentIndex, endpointKey);
+          if (isoGridIsFlange(isoGridMode)) {
+            isoGridInstallFlangeAtEndpoint(segmentIndex, endpointKey);
+            return;
+          }
+          if (isoGridMode === 'LINE') isoGridActivateEndpoint(segmentIndex, endpointKey);
         }
       };
       const cancel = cancelEvent => {
@@ -1368,6 +1401,15 @@ function isoGridTap(event, bypassTapGuard = false) {
   if (isoGridMode !== 'LINE') {
     if (isoGridBreaksPipe(isoGridMode)) {
       const nearest = isoGridNearestSegment(point);
+      if (nearest && isoGridIsFlange(isoGridMode)) {
+        const segment = drawing.segments[nearest.index];
+        const nearA = segment && Math.hypot(nearest.point.x - segment.a.x, nearest.point.y - segment.a.y) < 8;
+        const nearB = segment && Math.hypot(nearest.point.x - segment.b.x, nearest.point.y - segment.b.y) < 8;
+        if (nearA || nearB) {
+          isoGridInstallFlangeAtEndpoint(nearest.index, nearA ? 'a' : 'b');
+          return;
+        }
+      }
       if (nearest && isoGridSplitSegmentAt(nearest.index, nearest.point, isoGridMode)) {
         const installedType = isoGridMode;
         isoGridReturnToLineMode();
