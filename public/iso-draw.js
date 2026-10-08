@@ -13,6 +13,7 @@ let isoGridTapGuard = null;
 let isoGridPinchActive = false;
 let isoGridPinchSuppressUntil = 0;
 let isoGridPanActive = false;
+let isoGridEndpointDragging = false;
 let isoGridPanSuppressUntil = 0;
 let isoGridMeasurementDragUntil = 0;
 let isoGridState = {
@@ -1512,6 +1513,7 @@ function isoGridTap(event, bypassTapGuard = false) {
     isoGridLastPoint = point;
     isoGridSetStatus('Start point set. Tap the next grid point and the pipe line will draw automatically.');
     isoGridRender();
+    isoGridFollowPoint(isoGridLastPoint);
     return;
   }
   if (isoGridView === 'ISO' && isoGridSnapEnabled) point = isoGridConstrainDisplayLine(isoGridLastPoint, point);
@@ -1527,6 +1529,7 @@ function isoGridTap(event, bypassTapGuard = false) {
   const branchTee = drawing.symbols.find(symbol => isoGridIsTee(symbol.type) && symbol.pipePoint && symbol.pipePoint.x === drawing.segments[drawing.segments.length - 1].a.x && symbol.pipePoint.y === drawing.segments[drawing.segments.length - 1].a.y);
   isoGridSetStatus(branchTee ? 'Branch drawn from tee. The tee run stays with the original pipe and the bullhead automatically follows this branch angle.' : 'Pipe segment drawn on the grid and added as a Spool Leg. Elbows stay manual; touch an existing pipe leg when you want to start a tee branch.');
   isoGridRender();
+  isoGridFollowPoint(isoGridLastPoint);
 }
 
 function isoGridSelectSegment(index) {
@@ -1886,6 +1889,33 @@ function isoGridStartSymbolDrag(event, index) {
   window.addEventListener('pointerup', up);
 }
 
+// Keep room ahead of the active endpoint without changing the user's zoom.
+function isoGridFollowPoint(point) {
+  const viewport = $('isoTapViewport');
+  const scene = $('isoTapScene');
+  if (!viewport || !scene || !point || !viewport.clientWidth || !viewport.clientHeight) return;
+  const display = point.isoDisplayPoint && isoGridView === 'ISO' ? point.isoDisplayPoint : isoGridToViewPoint(point);
+  const rect = scene.getBoundingClientRect();
+  const x = display.x * rect.width / ISO_GRID_WIDTH;
+  const y = display.y * rect.height / ISO_GRID_HEIGHT;
+  const follow = (position, scroll, size, extent) => {
+    const margin = Math.min(100, size * 0.28);
+    if (position < scroll + margin) return Math.max(0, position - margin);
+    if (position > scroll + size - margin) return Math.max(0, Math.min(extent - size, position - size + margin));
+    return scroll;
+  };
+  viewport.scrollLeft = follow(x, viewport.scrollLeft, viewport.clientWidth, viewport.scrollWidth);
+  viewport.scrollTop = follow(y, viewport.scrollTop, viewport.clientHeight, viewport.scrollHeight);
+}
+
+function isoGridEdgePanVelocity(position, start, size) {
+  const edge = Math.min(64, size / 4);
+  if (edge <= 0) return 0;
+  if (position < start + edge) return -420 * Math.min(1, (start + edge - position) / edge);
+  if (position > start + size - edge) return 420 * Math.min(1, (position - start - size + edge) / edge);
+  return 0;
+}
+
 function isoGridStartEndpointDrag(event, segmentIndex, endpointKey) {
   event.preventDefault();
   event.stopPropagation();
@@ -1897,6 +1927,12 @@ function isoGridStartEndpointDrag(event, segmentIndex, endpointKey) {
   const original = { ...segment[endpointKey] };
   const wasActiveEndpoint = !!isoGridLastPoint && isoGridLastPoint.x === original.x && isoGridLastPoint.y === original.y;
   let lastPoint = { ...original };
+  isoGridEndpointDragging = true;
+  isoGridPanActive = false;
+  let pointer = { clientX: event.clientX, clientY: event.clientY };
+  let frame = 0;
+  let previousTime = 0;
+  let finished = false;
   const targets = [];
   drawing.segments.forEach((item, index) => {
     ['a', 'b'].forEach(key => {
@@ -1907,8 +1943,8 @@ function isoGridStartEndpointDrag(event, segmentIndex, endpointKey) {
   drawing.symbols.forEach((symbol, index) => {
     if ((symbol.auto || symbol.snapped) && Math.hypot(symbol.x - original.x, symbol.y - original.y) < 1) followingSymbols.push(index);
   });
-  const move = moveEvent => {
-    const point = isoGridEventPoint(moveEvent, true, true);
+  const applyPointer = () => {
+    const point = isoGridEventPoint(pointer, true, true);
     if (!point) return;
     lastPoint = point;
     targets.forEach(target => {
@@ -1918,14 +1954,48 @@ function isoGridStartEndpointDrag(event, segmentIndex, endpointKey) {
       if (drawing.symbols[index]) {
         drawing.symbols[index].x = point.x;
         drawing.symbols[index].y = point.y;
+        if (drawing.symbols[index].pipePoint) drawing.symbols[index].pipePoint = { ...point };
       }
     });
     if (wasActiveEndpoint) isoGridLastPoint = { ...point };
     isoGridRender();
   };
-  const up = () => {
+  const move = moveEvent => {
+    if (moveEvent.pointerId !== event.pointerId || finished) return;
+    if (isoGridPinchActive) { up(); return; }
+    moveEvent.preventDefault();
+    pointer = { clientX: moveEvent.clientX, clientY: moveEvent.clientY };
+    applyPointer();
+  };
+  const tick = time => {
+    if (finished) return;
+    if (isoGridPinchActive) { up(); return; }
+    const dt = previousTime ? Math.min(32, time - previousTime) / 1000 : 0;
+    previousTime = time;
+    const viewport = $('isoTapViewport');
+    if (viewport) {
+      const rect = viewport.getBoundingClientRect();
+      const left = viewport.scrollLeft;
+      const top = viewport.scrollTop;
+      viewport.scrollLeft += isoGridEdgePanVelocity(pointer.clientX, rect.left, viewport.clientWidth) * dt;
+      viewport.scrollTop += isoGridEdgePanVelocity(pointer.clientY, rect.top, viewport.clientHeight) * dt;
+      // Recompute the endpoint from its screen position after every pan, even
+      // when the finger is held still at the edge.
+      if (viewport.scrollLeft !== left || viewport.scrollTop !== top) applyPointer();
+    }
+    frame = requestAnimationFrame(tick);
+  };
+  const up = endEvent => {
+    if (endEvent && endEvent.pointerId !== event.pointerId) return;
+    if (finished) return;
+    finished = true;
+    isoGridEndpointDragging = false;
+    cancelAnimationFrame(frame);
     window.removeEventListener('pointermove', move);
     window.removeEventListener('pointerup', up);
+    window.removeEventListener('pointercancel', up);
+    window.removeEventListener('blur', blur);
+    isoGridPanSuppressUntil = Date.now() + 650;
     isoGridTapGuard = { until: Date.now() + 1000 };
     if (wasActiveEndpoint) isoGridLastPoint = { ...lastPoint };
     isoGridRemoveAutoAt(original);
@@ -1935,8 +2005,12 @@ function isoGridStartEndpointDrag(event, segmentIndex, endpointKey) {
       : 'Endpoint corrected. Your current active pipe point was not changed. Releasing the handle does not add a point.');
     isoGridRender();
   };
-  window.addEventListener('pointermove', move);
+  const blur = () => up();
+  window.addEventListener('pointermove', move, { passive: false });
   window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', up);
+  window.addEventListener('blur', blur);
+  frame = requestAnimationFrame(tick);
 }
 
 function isoGridSegmentsAtPoint(point) {
@@ -2358,7 +2432,7 @@ function initIsoDrawing() {
   const viewport = $('isoTapViewport');
   let panStart = null;
   scene.addEventListener('touchstart', event => {
-    if (!viewport || event.touches.length !== 1 || isoGridPinchActive || event.target.closest?.('[data-grid-measure], [data-grid-rise], [data-grid-run]')) {
+    if (!viewport || event.touches.length !== 1 || isoGridPinchActive || isoGridEndpointDragging || event.target.closest?.('.iso-end-handle, .iso-end-touch, [data-grid-measure], [data-grid-rise], [data-grid-run]')) {
       panStart = null;
       return;
     }
@@ -2373,7 +2447,7 @@ function initIsoDrawing() {
     isoGridPanActive = false;
   }, { capture: true, passive: true });
   scene.addEventListener('touchmove', event => {
-    if (!viewport || !panStart || event.touches.length !== 1 || isoGridPinchActive) return;
+    if (!viewport || !panStart || event.touches.length !== 1 || isoGridPinchActive || isoGridEndpointDragging) return;
     const touch = event.touches[0];
     const dx = touch.clientX - panStart.x;
     const dy = touch.clientY - panStart.y;

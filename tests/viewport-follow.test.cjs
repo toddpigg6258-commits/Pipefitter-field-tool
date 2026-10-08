@@ -1,0 +1,20 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+let x=200,y=100, next=1;const frames=new Map(),listeners=new Map();
+const viewport={clientWidth:320,clientHeight:400,scrollWidth:1200,scrollHeight:900,getBoundingClientRect:()=>({left:0,top:0}),get scrollLeft(){return x},set scrollLeft(v){x=Math.max(0,Math.min(880,v))},get scrollTop(){return y},set scrollTop(v){y=Math.max(0,Math.min(500,v))}};
+const fields={isoTapViewport:viewport,isoTapScene:{getBoundingClientRect:()=>({left:-x,top:-y,width:1200,height:900})}};
+const context=vm.createContext({assert,document:{readyState:'loading',addEventListener(){},getElementById:id=>fields[id]},window:{addEventListener:(n,f)=>listeners.set(n,f),removeEventListener:n=>listeners.delete(n)},requestAnimationFrame:f=>{frames.set(next,f);return next++},cancelAnimationFrame:id=>frames.delete(id),setTimeout(){}});
+vm.runInContext(fs.readFileSync('public/core1.js','utf8'),context);vm.runInContext(fs.readFileSync('public/iso-draw.js','utf8'),context);
+const run=s=>vm.runInContext(s,context);
+run(`isoGridRender=()=>{};isoGridSyncSpoolLegs=()=>{};isoGridView='PLAN';isoGridFollowPoint({x:510,y:490});assert.equal(isoGridZoom,1);`);
+assert(x>200&&y>100);const stationary=[x,y];run(`isoGridFollowPoint({x:510,y:490});`);assert.deepEqual([x,y],stationary);
+run(`assert.equal(isoGridEdgePanVelocity(160,0,320),0);assert(isoGridEdgePanVelocity(319,0,320)>0);assert(isoGridEdgePanVelocity(1,0,320)<0);
+isoGridState.SHARED={segments:[{a:{x:100,y:100},b:{x:500,y:300}}],symbols:[]};
+isoGridLastPoint={x:500,y:300};
+isoGridStartEndpointDrag({pointerId:1,clientX:319,clientY:200,preventDefault(){},stopPropagation(){}},0,'b');`);
+function tick(t){const pending=[...frames.values()];frames.clear();pending.forEach(f=>f(t))}
+const before=x;tick(16);tick(32);tick(48);assert(x>before);
+run(`assert(isoGridCurrent().segments[0].b.x>500);assert.equal(isoGridLastPoint.x,isoGridCurrent().segments[0].b.x);`);
+listeners.get('pointerup')({pointerId:2});assert(frames.size>0);
+listeners.get('pointercancel')({pointerId:1});assert.equal(frames.size,0);assert.equal(listeners.size,0);run(`assert.equal(isoGridEndpointDragging,false)`);
+run(`isoGridStartEndpointDrag({pointerId:3,clientX:319,clientY:200,preventDefault(){},stopPropagation(){}},0,'b');isoGridPinchActive=true;`);tick(64);assert.equal(frames.size,0);assert.equal(listeners.size,0);
+console.log('PASS: automatic follow, stable zoom, four-edge velocity, stationary-finger panning, endpoint tracking, pointer isolation, cancel cleanup and pinch handoff');
