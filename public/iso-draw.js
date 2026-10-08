@@ -76,7 +76,8 @@ function isoGridLoad() {
       view.segments = Array.isArray(view.segments) ? view.segments : [];
       view.symbols = Array.isArray(view.symbols) ? view.symbols.filter(symbol => !symbol.auto) : [];
       view.segments.forEach(segment => {
-        const normalizePoint = segment.offsetAuto ? isoGridModelPoint : isoGridCanonicalIsoPoint;
+        // Saved tee positions may lie between grid dots; never snap them on reload.
+        const normalizePoint = isoGridModelPoint;
         segment.a = normalizePoint(segment.a || { x: 0, y: 0 });
         segment.b = normalizePoint(segment.b || { x: 0, y: 0 });
         if (segment.measure == null) segment.measure = '';
@@ -548,7 +549,7 @@ function isoGridApplyOffsetGeometry(segment) {
 function isoGridSegmentMeasure(segment) {
   return segment.measure && segment.measure.trim()
     ? segment.measure.trim()
-    : fmtFeet(isoGridSegmentLength(segment));
+    : fmtFeet(segment.autoMeasureInches > 0 ? segment.autoMeasureInches : isoGridSegmentLength(segment));
 }
 
 function isoGridSegmentLabel(segment) {
@@ -708,8 +709,9 @@ function isoGridSplitSegmentAt(index, point, type) {
   }
   const undoSegment = { ...segment, a: { ...segment.a }, b: { ...segment.b } };
   const undoLastPoint = isoGridLastPoint ? { ...isoGridLastPoint } : null;
-  const first = { ...segment, b: { ...split }, measure: firstMeasure, endFitType: type };
-  const second = { ...segment, a: { ...split }, measure: secondMeasure, note: '', legId: null, startFitType: type };
+  const autoTotal = segment.autoMeasureInches > 0 ? segment.autoMeasureInches : isoGridSegmentLength(segment);
+  const first = { ...segment, b: { ...split }, measure: firstMeasure, autoMeasureInches: autoTotal * firstLength / totalLength, endFitType: type };
+  const second = { ...segment, a: { ...split }, measure: secondMeasure, autoMeasureInches: autoTotal * secondLength / totalLength, note: '', legId: null, startFitType: type };
   drawing.segments.splice(index, 1, first, second);
   const rotation = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x) * 180 / Math.PI;
   drawing.symbols.push({ ...split, type, rotation, snapped: true, auto: false, splitNode: true, pipePoint: { ...split }, manualTotal: isFinite(manualTotal) && manualTotal >= 0 ? manualTotal : null, splitUndo: { index, segment: undoSegment, lastPoint: undoLastPoint } });
@@ -1063,7 +1065,7 @@ function isoGridRender() {
   svg.style.height = `${height}px`;
   const drawing = isoGridCurrent();
   const occupiedDimensionLabels = [];
-    let markup = '<defs><marker id="isoDimArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#64748b"/></marker></defs>';
+    let markup = '<defs><marker id="isoDimArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#2563eb"/></marker></defs>';
     if (isoGridView === 'ISO' && isoGridVisible) {
       const vStep = ISO_GRID_STEP / Math.cos(Math.PI / 6);
       let gridMarkup = '<g class="iso-exact-grid">';
@@ -1093,7 +1095,7 @@ function isoGridRender() {
     while (dimensionTextAngle < -90) dimensionTextAngle += 180;
     if (segment.measurementRotationMode === 'HORIZONTAL') dimensionTextAngle = 0;
     const dimension = isoGridSegmentLabel(segment);
-    const measurementScale = Math.max(0.6, Math.min(1.4, Number(segment.measurementScale) || 1));
+    const measurementScale = 0.85 * Math.max(0.6, Math.min(1.4, Number(segment.measurementScale) || 1));
     const measureLabelOffset = segment.measureLabelOffset || { x: 0, y: 0 };
     const visibleDimension = isoGridMeasurementMode === 'ALL' || (isoGridMeasurementMode === 'AUTO' && index === isoGridSelectedSegment);
     // Place automatic dimension lanes clear of other labels and pipe runs.
@@ -1147,7 +1149,7 @@ function isoGridRender() {
         ? 'iso-tap-pipe complete'
         : 'iso-tap-pipe';
     const showSegmentMeasurements = isoGridMeasurementMode === 'ALL' || (isoGridMeasurementMode === 'AUTO' && index === isoGridSelectedSegment);
-    const dimensionMarkup = showSegmentMeasurements ? `<line x1="${a.x}" y1="${a.y}" x2="${d1.x}" y2="${d1.y}" class="iso-tap-witness"/><line x1="${b.x}" y1="${b.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-witness"/><line x1="${d1.x}" y1="${d1.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><g transform="rotate(${dimensionTextAngle} ${mx + measureLabelOffset.x} ${my + measureLabelOffset.y})"><rect x="${mx + measureLabelOffset.x - 47 * measurementScale}" y="${my + measureLabelOffset.y - 9 * measurementScale}" width="${94 * measurementScale}" height="${15 * measurementScale}" rx="${3 * measurementScale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-measure="${index}"/><text x="${mx + measureLabelOffset.x}" y="${my + measureLabelOffset.y + measurementScale}" class="iso-tap-dim-text iso-movable-measure" data-grid-measure="${index}" style="font-size:${9 * measurementScale}px">${isoGridEsc(dimension)}</text></g>` : '';
+    const dimensionMarkup = showSegmentMeasurements ? `<line x1="${pipeMidX}" y1="${pipeMidY}" x2="${mx + measureLabelOffset.x}" y2="${my + measureLabelOffset.y}" class="iso-tap-witness"/><line x1="${a.x}" y1="${a.y}" x2="${d1.x}" y2="${d1.y}" class="iso-tap-witness"/><line x1="${b.x}" y1="${b.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-witness"/><line x1="${d1.x}" y1="${d1.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><g transform="rotate(${dimensionTextAngle} ${mx + measureLabelOffset.x} ${my + measureLabelOffset.y})"><rect x="${mx + measureLabelOffset.x - 47 * measurementScale}" y="${my + measureLabelOffset.y - 9 * measurementScale}" width="${94 * measurementScale}" height="${15 * measurementScale}" rx="${3 * measurementScale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-measure="${index}"/><text x="${mx + measureLabelOffset.x}" y="${my + measureLabelOffset.y + measurementScale}" class="iso-tap-dim-text iso-movable-measure" data-grid-measure="${index}" style="font-size:${9 * measurementScale}px">${isoGridEsc(dimension)}</text></g>` : '';
     const leftX = Math.max(26, Math.min(a.x, b.x) - 34); const topY = Math.min(a.y, b.y); const bottomY = Math.max(a.y, b.y); const midY = (topY + bottomY) / 2; const leftEnd = a.x <= b.x ? a : b; const rightEnd = a.x <= b.x ? b : a; const runY = Math.min(ISO_GRID_HEIGHT - 28, Math.max(a.y, b.y) + 34); const runMidX = (leftEnd.x + rightEnd.x) / 2;
     const offsetMath = isoGridOffsetMath(segment);
     let offsetGuideMarkup = '';
@@ -1566,7 +1568,7 @@ function isoGridReflowMeasuredRun(selectedIndex) {
   const drawing = isoGridCurrent();
   const selected = drawing.segments[selectedIndex];
   if (!selected) return false;
-  const same = (p, q) => p && q && Math.hypot(p.x - q.x, p.y - q.y) < 1;
+  const same = (p, q) => p && q && Math.hypot(p.x - q.x, p.y - q.y) < 0.01;
   const otherEnd = (segment, point) => same(segment.a, point) ? segment.b : same(segment.b, point) ? segment.a : null;
   const continuation = (segmentIndex, point) => {
     const segment = drawing.segments[segmentIndex];
@@ -1578,7 +1580,7 @@ function isoGridReflowMeasuredRun(selectedIndex) {
     let best = -1;
     let bestDot = 1;
     drawing.segments.forEach((candidate, index) => {
-      if (index === segmentIndex) return;
+      if (index === segmentIndex || candidate.offsetAuto) return;
       const away = otherEnd(candidate, point);
       if (!away) return;
       const wx = away.x - point.x;
@@ -1627,17 +1629,27 @@ function isoGridReflowMeasuredRun(selectedIndex) {
     cursor = { ...next };
   }
 
+  // Unmeasured sections participate immediately, using their original drawing
+  // scale. Retain those inferred lengths so repeated saves cannot drift the tees.
   const measures = indices.map(index => {
-    const value = drawing.segments[index].measure?.trim();
-    if (!value) return NaN;
-    try { return literal(value); } catch { return NaN; }
+    const segment = drawing.segments[index];
+    const value = segment.measure?.trim();
+    if (value) {
+      try { return literal(value); } catch { return NaN; }
+    }
+    return segment.autoMeasureInches > 0 ? segment.autoMeasureInches : isoGridSegmentLength(segment);
   });
   if (measures.some(value => !(value > 0))) return false;
   const total = measures.reduce((sum, value) => sum + value, 0);
   if (!(total > 0)) return false;
 
+  indices.forEach((index, position) => {
+    const segment = drawing.segments[index];
+    if (!segment.measure?.trim()) segment.autoMeasureInches = measures[position];
+  });
   const start = nodes[0];
   const end = nodes[nodes.length - 1];
+  const moves = [];
   let cumulative = 0;
   for (let i = 1; i < nodes.length - 1; i += 1) {
     cumulative += measures[i - 1];
@@ -1646,8 +1658,60 @@ function isoGridReflowMeasuredRun(selectedIndex) {
       x: start.x + (end.x - start.x) * ratio,
       y: start.y + (end.y - start.y) * ratio,
     };
-    isoGridMoveSharedNode(nodes[i], target);
+    moves.push({ from: nodes[i], to: target });
   }
+  // Carry a branch subtree with its tee so its angle and entered length stay
+  // intact. A loop tied back into this run keeps its other attachment fixed.
+  const runIndices = new Set(indices);
+  const visitedBranches = new Set();
+  drawing.segments.forEach((segment, index) => {
+    if (runIndices.has(index) || visitedBranches.has(index)) return;
+    const component = [];
+    const queue = [index];
+    while (queue.length) {
+      const currentIndex = queue.pop();
+      if (visitedBranches.has(currentIndex)) continue;
+      visitedBranches.add(currentIndex);
+      const current = drawing.segments[currentIndex];
+      component.push(current);
+      drawing.segments.forEach((candidate, candidateIndex) => {
+        if (runIndices.has(candidateIndex) || visitedBranches.has(candidateIndex)) return;
+        if ([current.a, current.b].some(point => same(point, candidate.a) || same(point, candidate.b))) queue.push(candidateIndex);
+      });
+    }
+    const branchPoints = component.flatMap(item => [item.a, item.b]);
+    const anchors = nodes.filter(node => branchPoints.some(point => same(point, node)));
+    if (anchors.length !== 1) return;
+    const anchorMove = moves.find(move => same(move.from, anchors[0]));
+    if (!anchorMove) return;
+    const dx = anchorMove.to.x - anchorMove.from.x;
+    const dy = anchorMove.to.y - anchorMove.from.y;
+    branchPoints.forEach(point => {
+      if (moves.some(move => same(move.from, point))) return;
+      moves.push({ from: { ...point }, to: { x: point.x + dx, y: point.y + dy } });
+    });
+  });
+  // Apply from the original geometry in one pass. Sequential moves can merge
+  // two tees when one target happens to equal another tee's old position.
+  const movedPoint = point => {
+    const move = moves.find(item => same(point, item.from));
+    return move ? { ...move.to } : point;
+  };
+  drawing.segments.forEach(segment => {
+    segment.a = movedPoint(segment.a);
+    segment.b = movedPoint(segment.b);
+  });
+  drawing.symbols.forEach(symbol => {
+    if (!symbol.snapped && !symbol.auto && !symbol.pipePoint) return;
+    const target = movedPoint(symbol.pipePoint || symbol);
+    if (target === (symbol.pipePoint || symbol)) return;
+    const dx = target.x - (symbol.pipePoint || symbol).x;
+    const dy = target.y - (symbol.pipePoint || symbol).y;
+    symbol.x += dx;
+    symbol.y += dy;
+    if (symbol.pipePoint) symbol.pipePoint = { ...target };
+  });
+  if (isoGridLastPoint) isoGridLastPoint = movedPoint(isoGridLastPoint);
   return true;
 }
 
@@ -2122,7 +2186,7 @@ function isoGridExportSvgText() {
   clone.querySelectorAll('.iso-tap-pipe.selected').forEach(element => element.classList.remove('selected'));
   clone.querySelectorAll('[data-grid-symbol] circle[stroke="#f59e0b"]').forEach(element => element.remove());
   const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-  style.textContent = '.iso-tap-pipe{stroke:#111827;stroke-width:5;stroke-linecap:round}.iso-tap-pipe.complete{stroke:#16a34a;stroke-width:7}.iso-tap-hit{display:none}.iso-tap-node{fill:#fff;stroke:#111827;stroke-width:1.8}.iso-tap-witness,.iso-tap-dim{stroke:#64748b;stroke-width:1}.iso-tap-dim-bg{fill:#fff;stroke:#94a3b8;stroke-width:.8}.iso-tap-dim-text{fill:#111827;font-size:10px;font-weight:800;text-anchor:middle;font-family:monospace}.iso-tap-note{fill:#475569;stroke:#fff;stroke-width:3px;paint-order:stroke fill;text-anchor:middle;font-size:10px;font-family:monospace}';
+  style.textContent = '.iso-tap-pipe{stroke:#111827;stroke-width:5;stroke-linecap:round}.iso-tap-pipe.complete{stroke:#16a34a;stroke-width:7}.iso-tap-hit{display:none}.iso-tap-node{fill:#fff;stroke:#111827;stroke-width:1.8}.iso-tap-witness,.iso-tap-dim{stroke:#2563eb;stroke-width:1;stroke-dasharray:1 4;stroke-linecap:round}.iso-tap-dim-bg{fill:#fff;stroke:#94a3b8;stroke-width:.8}.iso-tap-dim-text{fill:#111827;font-size:10px;font-weight:800;text-anchor:middle;font-family:monospace}.iso-tap-note{fill:#475569;stroke:#fff;stroke-width:3px;paint-order:stroke fill;text-anchor:middle;font-size:10px;font-family:monospace}';
   clone.insertBefore(style, clone.firstChild);
   return new XMLSerializer().serializeToString(clone);
 }
@@ -2492,3 +2556,4 @@ function initIsoDrawing() {
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initIsoDrawing);
 else setTimeout(initIsoDrawing, 0);
+
