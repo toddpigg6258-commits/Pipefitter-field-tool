@@ -374,7 +374,9 @@ function isoGridStartBranchAtPoint(index, rawPoint) {
   const segment = drawing.segments[index];
   if (!segment || isoGridMode !== 'LINE' || !rawPoint) return false;
   const previousLastPoint = isoGridLastPoint ? { ...isoGridLastPoint } : { ...segment.b };
-  const point = isoGridSnapPointToSegmentGrid(segment, rawPoint, true, true);
+  // Preserve the actual tap position; the tee split routine projects it
+  // onto the pipe. Grid-division snapping can collapse short runs to an end.
+  const point = rawPoint;
   if (!isoGridSplitSegmentAt(index, point, 'TEE')) {
     isoGridSetStatus('Tap the body of the pipe, away from an endpoint, to install a tee and split the run into two sections.');
     return true;
