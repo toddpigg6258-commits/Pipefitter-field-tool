@@ -1041,6 +1041,17 @@ function isoGridToggleMeasurementRotation() {
   isoGridRender();
 }
 
+// Both witness lines stay attached to the pipe; the dimension and label move together.
+function isoGridDimensionMarkup(index, kind, anchorA, anchorB, baseA, baseB, offset, text, scale, angle = 0) {
+  const a = { x: baseA.x + offset.x, y: baseA.y + offset.y };
+  const b = { x: baseB.x + offset.x, y: baseB.y + offset.y };
+  const x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
+  const main = kind === 'measure';
+  const width = (main ? 94 : 62) * scale;
+  const height = (main ? 15 : 18) * scale;
+  return `<g data-dimension="${kind}" data-dimension-section="${index}"><line x1="${anchorA.x}" y1="${anchorA.y}" x2="${a.x}" y2="${a.y}" class="iso-tap-witness"/><line x1="${anchorB.x}" y1="${anchorB.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-witness"/><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><g data-dimension-label><g transform="rotate(${angle} ${x} ${y})"><rect x="${x - width / 2}" y="${y - (main ? 9 : 10) * scale}" width="${width}" height="${height}" rx="${3 * scale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-${kind}="${index}"/><text x="${x}" y="${y + (main ? 1 : 2) * scale}" class="iso-tap-dim-text iso-movable-measure" data-grid-${kind}="${index}" style="font-size:${(main ? 9 : 10) * scale}px">${isoGridEsc(text)}</text></g></g></g>`;
+}
+
 function isoGridRender() {
   const scene = $('isoTapScene');
   const svg = $('isoTapSvg');
@@ -1150,12 +1161,12 @@ function isoGridRender() {
         ? 'iso-tap-pipe complete'
         : 'iso-tap-pipe';
     const showSegmentMeasurements = isoGridMeasurementMode === 'ALL' || (isoGridMeasurementMode === 'AUTO' && index === isoGridSelectedSegment);
-    const dimensionMarkup = showSegmentMeasurements ? `<line x1="${a.x}" y1="${a.y}" x2="${d1.x}" y2="${d1.y}" class="iso-tap-witness"/><line x1="${b.x}" y1="${b.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-witness"/><line x1="${d1.x}" y1="${d1.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><g transform="rotate(${dimensionTextAngle} ${mx + measureLabelOffset.x} ${my + measureLabelOffset.y})"><rect x="${mx + measureLabelOffset.x - 47 * measurementScale}" y="${my + measureLabelOffset.y - 9 * measurementScale}" width="${94 * measurementScale}" height="${15 * measurementScale}" rx="${3 * measurementScale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-measure="${index}"/><text x="${mx + measureLabelOffset.x}" y="${my + measureLabelOffset.y + measurementScale}" class="iso-tap-dim-text iso-movable-measure" data-grid-measure="${index}" style="font-size:${9 * measurementScale}px">${isoGridEsc(dimension)}</text></g>` : '';
+    const dimensionMarkup = showSegmentMeasurements ? isoGridDimensionMarkup(index, 'measure', a, b, d1, d2, measureLabelOffset, dimension, measurementScale, dimensionTextAngle) : '';
     const leftX = Math.max(26, Math.min(a.x, b.x) - 34); const topY = Math.min(a.y, b.y); const bottomY = Math.max(a.y, b.y); const midY = (topY + bottomY) / 2; const leftEnd = a.x <= b.x ? a : b; const rightEnd = a.x <= b.x ? b : a; const runY = Math.min(ISO_GRID_HEIGHT - 28, Math.max(a.y, b.y) + 34); const runMidX = (leftEnd.x + rightEnd.x) / 2;
     const offsetMath = isoGridOffsetMath(segment);
     let offsetGuideMarkup = '';
-    let riseMarkup = showSegmentMeasurements && segment.riseMeasure ? `<g class="iso-offset-callout"><line x1="${leftX}" y1="${topY}" x2="${leftX}" y2="${bottomY}" class="iso-tap-dim iso-offset-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><line x1="${leftX + 8}" y1="${topY}" x2="${a.y <= b.y ? a.x : b.x}" y2="${topY}" class="iso-tap-witness iso-offset-witness"/><line x1="${leftX + 8}" y1="${bottomY}" x2="${a.y >= b.y ? a.x : b.x}" y2="${bottomY}" class="iso-tap-witness iso-offset-witness"/><rect x="${leftX + riseLabelOffset.x - 31 * measurementScale}" y="${midY + riseLabelOffset.y - 10 * measurementScale}" width="${62 * measurementScale}" height="${18 * measurementScale}" rx="${3 * measurementScale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-rise="${index}"/><text x="${leftX + riseLabelOffset.x}" y="${midY + riseLabelOffset.y + 2 * measurementScale}" class="iso-tap-dim-text iso-movable-measure" data-grid-rise="${index}" style="font-size:${10 * measurementScale}px">${isoGridEsc(segment.riseMeasure)}</text></g>` : '';
-    let runMarkup = showSegmentMeasurements && segment.runMeasure ? `<g class="iso-offset-callout"><line x1="${leftEnd.x}" y1="${runY}" x2="${rightEnd.x}" y2="${runY}" class="iso-tap-dim iso-offset-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><line x1="${leftEnd.x}" y1="${leftEnd.y}" x2="${leftEnd.x}" y2="${runY - 8}" class="iso-tap-witness iso-offset-witness"/><line x1="${rightEnd.x}" y1="${rightEnd.y}" x2="${rightEnd.x}" y2="${runY - 8}" class="iso-tap-witness iso-offset-witness"/><rect x="${runMidX + runLabelOffset.x - 31 * measurementScale}" y="${runY + runLabelOffset.y - 10 * measurementScale}" width="${62 * measurementScale}" height="${18 * measurementScale}" rx="${3 * measurementScale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-run="${index}"/><text x="${runMidX + runLabelOffset.x}" y="${runY + runLabelOffset.y + 2 * measurementScale}" class="iso-tap-dim-text iso-movable-measure" data-grid-run="${index}" style="font-size:${10 * measurementScale}px">${isoGridEsc(segment.runMeasure)}</text></g>` : '';
+    let riseMarkup = showSegmentMeasurements && segment.riseMeasure ? isoGridDimensionMarkup(index, 'rise', a.y <= b.y ? a : b, a.y <= b.y ? b : a, {x:leftX,y:topY}, {x:leftX,y:bottomY}, riseLabelOffset, segment.riseMeasure, measurementScale) : '';
+    let runMarkup = showSegmentMeasurements && segment.runMeasure ? isoGridDimensionMarkup(index, 'run', leftEnd, rightEnd, {x:leftEnd.x,y:runY}, {x:rightEnd.x,y:runY}, runLabelOffset, segment.runMeasure, measurementScale) : '';
     if (isoGridView === 'ISO' && offsetMath && segment.offsetAuto && (isoGridMeasurementMode === 'ALL' || index === isoGridSelectedSegment)) {
       const basis = isoGridOffsetDirectionBasis(segment);
       const pixelsPerInch = Number(segment.offsetPixelsPerInch) > 0 ? Number(segment.offsetPixelsPerInch) : isoGridMeasuredPixelsPerInch(segment);
@@ -1178,13 +1189,13 @@ function isoGridRender() {
         const runA = { x: a.x + runNormal.x * runShift, y: a.y + runNormal.y * runShift };
         const runB = { x: corner.x + runNormal.x * runShift, y: corner.y + runNormal.y * runShift };
         const runMid = { x: (runA.x + runB.x) / 2, y: (runA.y + runB.y) / 2 };
-        runMarkup = segment.runMeasure ? `<g class="iso-offset-callout"><line x1="${a.x}" y1="${a.y}" x2="${runA.x}" y2="${runA.y}" class="iso-tap-witness iso-offset-witness"/><line x1="${corner.x}" y1="${corner.y}" x2="${runB.x}" y2="${runB.y}" class="iso-tap-witness iso-offset-witness"/><line x1="${runA.x}" y1="${runA.y}" x2="${runB.x}" y2="${runB.y}" class="iso-tap-dim iso-offset-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><rect x="${runMid.x - 31}" y="${runMid.y - 10}" width="62" height="18" class="iso-tap-dim-bg" data-grid-run="${index}"/><text x="${runMid.x}" y="${runMid.y + 2}" class="iso-tap-dim-text" data-grid-run="${index}" style="font-size:10px">${isoGridEsc(segment.runMeasure)}</text></g>` : '';
+        runMarkup = segment.runMeasure ? isoGridDimensionMarkup(index, 'run', a, corner, runA, runB, runLabelOffset, segment.runMeasure, measurementScale) : '';
         const riseNormal = { x: -basis.vertical.vector.y, y: basis.vertical.vector.x };
         const riseShift = 28 * (basis.plan.vector.x >= 0 ? 1 : -1);
         const riseA = { x: corner.x + riseNormal.x * riseShift, y: corner.y + riseNormal.y * riseShift };
         const riseB = { x: b.x + riseNormal.x * riseShift, y: b.y + riseNormal.y * riseShift };
         const riseMid = { x: (riseA.x + riseB.x) / 2, y: (riseA.y + riseB.y) / 2 };
-        riseMarkup = segment.riseMeasure ? `<g class="iso-offset-callout"><line x1="${corner.x}" y1="${corner.y}" x2="${riseA.x}" y2="${riseA.y}" class="iso-tap-witness iso-offset-witness"/><line x1="${b.x}" y1="${b.y}" x2="${riseB.x}" y2="${riseB.y}" class="iso-tap-witness iso-offset-witness"/><line x1="${riseA.x}" y1="${riseA.y}" x2="${riseB.x}" y2="${riseB.y}" class="iso-tap-dim iso-offset-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><rect x="${riseMid.x - 31}" y="${riseMid.y - 10}" width="62" height="18" class="iso-tap-dim-bg" data-grid-rise="${index}"/><text x="${riseMid.x}" y="${riseMid.y + 2}" class="iso-tap-dim-text" data-grid-rise="${index}" style="font-size:10px">${isoGridEsc(segment.riseMeasure)}</text></g>` : '';
+        riseMarkup = segment.riseMeasure ? isoGridDimensionMarkup(index, 'rise', corner, b, riseA, riseB, riseLabelOffset, segment.riseMeasure, measurementScale) : '';
       }
     }
     markup += `<g data-grid-segment="${index}" class="iso-grid-segment"><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="${pipeClass}"/><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-hit"/><circle cx="${a.x}" cy="${a.y}" r="7" class="iso-tap-node iso-end-touch" data-grid-end="a" data-grid-segment="${index}"/><circle cx="${b.x}" cy="${b.y}" r="7" class="iso-tap-node iso-end-touch" data-grid-end="b" data-grid-segment="${index}"/>${dimensionMarkup}${offsetGuideMarkup}${riseMarkup}${runMarkup}${segment.note ? `<text x="${(a.x + b.x) / 2}" y="${(a.y + b.y) / 2 + 18}" class="iso-tap-note">${isoGridEsc(segment.note)}</text>` : ''}</g>`;
@@ -1215,6 +1226,24 @@ function isoGridRender() {
         if (!segment) return;
         const original = segment[offsetKey] || { x: 0, y: 0 };
         let dragging = false;
+        const callout = element.closest('[data-dimension]');
+        const label = callout?.querySelector('[data-dimension-label]');
+        const lines = Array.from(callout?.querySelectorAll('line') || []).map(line => ({
+          line, witness: line.classList.contains('iso-tap-witness'),
+          x1: +line.getAttribute('x1'), y1: +line.getAttribute('y1'),
+          x2: +line.getAttribute('x2'), y2: +line.getAttribute('y2'),
+        }));
+        const preview = (dx, dy) => {
+          if (label) label.setAttribute('transform', `translate(${dx} ${dy})`);
+          lines.forEach(item => {
+            if (!item.witness) {
+              item.line.setAttribute('x1', item.x1 + dx);
+              item.line.setAttribute('y1', item.y1 + dy);
+            }
+            item.line.setAttribute('x2', item.x2 + dx);
+            item.line.setAttribute('y2', item.y2 + dy);
+          });
+        };
         const move = moveEvent => {
           const point = pointFromEvent(moveEvent);
           if (!point || !matchEvent(moveEvent)) return;
@@ -1222,6 +1251,7 @@ function isoGridRender() {
           const dy = (point.clientY - startY) / isoGridZoom;
           if (!dragging && Math.hypot(dx, dy) < 5) return;
           dragging = true;
+          preview(dx, dy);
           isoGridMeasurementDragUntil = Date.now() + 800;
           isoGridPanSuppressUntil = Date.now() + 800;
           moveEvent.preventDefault();
@@ -1248,6 +1278,7 @@ function isoGridRender() {
         const cancel = cancelEvent => {
           if (!matchEvent(cancelEvent)) return;
           cleanup();
+          preview(0, 0);
         };
         const cleanup = () => {
           moveTarget.removeEventListener(moveName, move);
