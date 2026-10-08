@@ -676,8 +676,24 @@ function isoGridSplitSegmentAt(index, point, type) {
   const drawing = isoGridCurrent();
   const segment = drawing.segments[index];
   if (!segment) return false;
-  const split = isoGridSnapPointToSegmentGrid(segment, point, true, isoGridIsTee(type));
-  if (Math.hypot(split.x - segment.a.x, split.y - segment.a.y) < 8 || Math.hypot(split.x - segment.b.x, split.y - segment.b.y) < 8) return false;
+  // Tees must split even the very first/shortest pipe leg. ISO diagonal
+  // screen coordinates often have a GCD of 1, so grid-step splitting fails.
+  // Project a tee onto the pipe itself and keep it clear of both endpoints.
+  let split;
+  if (isoGridIsTee(type)) {
+    const dx = segment.b.x - segment.a.x;
+    const dy = segment.b.y - segment.a.y;
+    const lengthSquared = dx * dx + dy * dy;
+    const length = Math.sqrt(lengthSquared);
+    if (length < 14) return false;
+    const projected = ((point.x - segment.a.x) * dx + (point.y - segment.a.y) * dy) / lengthSquared;
+    const margin = Math.min(0.42, 7 / length);
+    const t = Math.max(margin, Math.min(1 - margin, projected));
+    split = { x: segment.a.x + t * dx, y: segment.a.y + t * dy };
+  } else {
+    split = isoGridSnapPointToSegmentGrid(segment, point, true, false);
+  }
+  if (Math.hypot(split.x - segment.a.x, split.y - segment.a.y) < 6 || Math.hypot(split.x - segment.b.x, split.y - segment.b.y) < 6) return false;
   const firstLength = Math.hypot(split.x - segment.a.x, split.y - segment.a.y);
   const secondLength = Math.hypot(segment.b.x - split.x, segment.b.y - split.y);
   const totalLength = firstLength + secondLength;
@@ -1044,6 +1060,7 @@ function isoGridRender() {
   svg.style.width = `${width}px`;
   svg.style.height = `${height}px`;
   const drawing = isoGridCurrent();
+  const occupiedDimensionLabels = [];
     let markup = '<defs><marker id="isoDimArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#64748b"/></marker></defs>';
     if (isoGridView === 'ISO' && isoGridVisible) {
       const vStep = ISO_GRID_STEP / Math.cos(Math.PI / 6);
@@ -1064,15 +1081,11 @@ function isoGridRender() {
     const length = Math.hypot(dx, dy) || 1;
     const nx = -dy / length;
     const ny = dx / length;
-    const offset = 28;
     const pipeMidX = (a.x + b.x) / 2;
     const pipeMidY = (a.y + b.y) / 2;
     const autoDimensionSide = (nx * (pipeMidX - ISO_GRID_WIDTH / 2) + ny * (pipeMidY - ISO_GRID_HEIGHT / 2)) >= 0 ? 1 : -1;
-    const dimensionSide = segment.dimensionSide === 1 || segment.dimensionSide === -1 ? segment.dimensionSide : autoDimensionSide;
-    const d1 = { x: a.x + nx * offset * dimensionSide, y: a.y + ny * offset * dimensionSide };
-    const d2 = { x: b.x + nx * offset * dimensionSide, y: b.y + ny * offset * dimensionSide };
-    const mx = (d1.x + d2.x) / 2;
-    const my = (d1.y + d2.y) / 2;
+    let dimensionSide = segment.dimensionSide === 1 || segment.dimensionSide === -1 ? segment.dimensionSide : autoDimensionSide;
+    let offset = 28;
     let dimensionTextAngle = Math.atan2(dy, dx) * 180 / Math.PI;
     while (dimensionTextAngle > 90) dimensionTextAngle -= 180;
     while (dimensionTextAngle < -90) dimensionTextAngle += 180;
@@ -1080,6 +1093,50 @@ function isoGridRender() {
     const dimension = isoGridSegmentLabel(segment);
     const measurementScale = Math.max(0.6, Math.min(1.4, Number(segment.measurementScale) || 1));
     const measureLabelOffset = segment.measureLabelOffset || { x: 0, y: 0 };
+    const visibleDimension = isoGridMeasurementMode === 'ALL' || (isoGridMeasurementMode === 'AUTO' && index === isoGridSelectedSegment);
+    // Place automatic dimension lanes clear of other labels and pipe runs.
+    // Keep user-dragged labels exactly where the user left them.
+    const explicitOffset = Math.hypot(measureLabelOffset.x, measureLabelOffset.y) > 1;
+    const angleRad = dimensionTextAngle * Math.PI / 180;
+    const halfW = Math.abs(Math.cos(angleRad)) * 47 * measurementScale + Math.abs(Math.sin(angleRad)) * 10 * measurementScale + 8;
+    const halfH = Math.abs(Math.sin(angleRad)) * 47 * measurementScale + Math.abs(Math.cos(angleRad)) * 10 * measurementScale + 8;
+    const candidateSides = segment.dimensionSide === 1 || segment.dimensionSide === -1 ? [dimensionSide] : [dimensionSide, -dimensionSide];
+    const collidesWithPipe = (cx, cy) => drawing.segments.some((other, otherIndex) => {
+      if (otherIndex === index) return false;
+      const oa = isoGridToViewPoint(other.a);
+      const ob = isoGridToViewPoint(other.b);
+      const vx = ob.x - oa.x;
+      const vy = ob.y - oa.y;
+      const lengthSquared = vx * vx + vy * vy;
+      if (!lengthSquared) return false;
+      const t = Math.max(0, Math.min(1, ((cx - oa.x) * vx + (cy - oa.y) * vy) / lengthSquared));
+      return Math.hypot(cx - (oa.x + t * vx), cy - (oa.y + t * vy)) < Math.min(halfW, halfH) + 9;
+    });
+    if (visibleDimension && !explicitOffset) {
+      let chosen = null;
+      for (const lane of [28, 54, 80, 106, 132, 158]) {
+        for (const side of candidateSides) {
+          const cx = pipeMidX + nx * lane * side;
+          const cy = pipeMidY + ny * lane * side;
+          const box = { x1: cx - halfW, x2: cx + halfW, y1: cy - halfH, y2: cy + halfH };
+          const inBounds = box.x1 > 8 && box.x2 < ISO_GRID_WIDTH - 8 && box.y1 > 8 && box.y2 < ISO_GRID_HEIGHT - 8;
+          const overlaps = occupiedDimensionLabels.some(used => box.x1 < used.x2 + 8 && box.x2 + 8 > used.x1 && box.y1 < used.y2 + 8 && box.y2 + 8 > used.y1);
+          if (inBounds && !overlaps && !collidesWithPipe(cx, cy)) { chosen = { lane, side, box }; break; }
+        }
+        if (chosen) break;
+      }
+      if (chosen) { offset = chosen.lane; dimensionSide = chosen.side; }
+    }
+    const d1 = { x: a.x + nx * offset * dimensionSide, y: a.y + ny * offset * dimensionSide };
+    const d2 = { x: b.x + nx * offset * dimensionSide, y: b.y + ny * offset * dimensionSide };
+    const mx = (d1.x + d2.x) / 2;
+    const my = (d1.y + d2.y) / 2;
+    if (visibleDimension) occupiedDimensionLabels.push({
+      x1: mx + measureLabelOffset.x - halfW,
+      x2: mx + measureLabelOffset.x + halfW,
+      y1: my + measureLabelOffset.y - halfH,
+      y2: my + measureLabelOffset.y + halfH,
+    });
     const riseLabelOffset = segment.riseLabelOffset || { x: 0, y: 0 };
     const runLabelOffset = segment.runLabelOffset || { x: 0, y: 0 };
     const pipeClass = index === isoGridSelectedSegment
@@ -2218,7 +2275,7 @@ function initIsoDrawing() {
       Math.hypot(nearest.point.x - segment.a.x, nearest.point.y - segment.a.y),
       Math.hypot(nearest.point.x - segment.b.x, nearest.point.y - segment.b.y)
     );
-    if (nearEnd < 12) return;
+    if (nearEnd < 6) return;
     // Use the geometrically projected point directly. This avoids iPhone/Safari
     // DOM hit-target differences and guarantees a pipe-body tap creates the split.
     if (isoGridStartBranchAtPoint(nearest.index, nearest.point)) {
