@@ -1065,7 +1065,7 @@ function isoGridRender() {
   svg.style.height = `${height}px`;
   const drawing = isoGridCurrent();
   const occupiedDimensionLabels = [];
-    let markup = '<defs><marker id="isoDimArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#2563eb"/></marker></defs>';
+    let markup = '<defs><marker id="isoDimArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#1e3a8a"/></marker></defs>';
     if (isoGridView === 'ISO' && isoGridVisible) {
       const vStep = ISO_GRID_STEP / Math.cos(Math.PI / 6);
       let gridMarkup = '<g class="iso-exact-grid">';
@@ -1149,7 +1149,7 @@ function isoGridRender() {
         ? 'iso-tap-pipe complete'
         : 'iso-tap-pipe';
     const showSegmentMeasurements = isoGridMeasurementMode === 'ALL' || (isoGridMeasurementMode === 'AUTO' && index === isoGridSelectedSegment);
-    const dimensionMarkup = showSegmentMeasurements ? `<line x1="${pipeMidX}" y1="${pipeMidY}" x2="${mx + measureLabelOffset.x}" y2="${my + measureLabelOffset.y}" class="iso-tap-witness"/><line x1="${a.x}" y1="${a.y}" x2="${d1.x}" y2="${d1.y}" class="iso-tap-witness"/><line x1="${b.x}" y1="${b.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-witness"/><line x1="${d1.x}" y1="${d1.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><g transform="rotate(${dimensionTextAngle} ${mx + measureLabelOffset.x} ${my + measureLabelOffset.y})"><rect x="${mx + measureLabelOffset.x - 47 * measurementScale}" y="${my + measureLabelOffset.y - 9 * measurementScale}" width="${94 * measurementScale}" height="${15 * measurementScale}" rx="${3 * measurementScale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-measure="${index}"/><text x="${mx + measureLabelOffset.x}" y="${my + measureLabelOffset.y + measurementScale}" class="iso-tap-dim-text iso-movable-measure" data-grid-measure="${index}" style="font-size:${9 * measurementScale}px">${isoGridEsc(dimension)}</text></g>` : '';
+    const dimensionMarkup = showSegmentMeasurements ? `<line x1="${a.x}" y1="${a.y}" x2="${d1.x}" y2="${d1.y}" class="iso-tap-witness"/><line x1="${b.x}" y1="${b.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-witness"/><line x1="${d1.x}" y1="${d1.y}" x2="${d2.x}" y2="${d2.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><g transform="rotate(${dimensionTextAngle} ${mx + measureLabelOffset.x} ${my + measureLabelOffset.y})"><rect x="${mx + measureLabelOffset.x - 47 * measurementScale}" y="${my + measureLabelOffset.y - 9 * measurementScale}" width="${94 * measurementScale}" height="${15 * measurementScale}" rx="${3 * measurementScale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-measure="${index}"/><text x="${mx + measureLabelOffset.x}" y="${my + measureLabelOffset.y + measurementScale}" class="iso-tap-dim-text iso-movable-measure" data-grid-measure="${index}" style="font-size:${9 * measurementScale}px">${isoGridEsc(dimension)}</text></g>` : '';
     const leftX = Math.max(26, Math.min(a.x, b.x) - 34); const topY = Math.min(a.y, b.y); const bottomY = Math.max(a.y, b.y); const midY = (topY + bottomY) / 2; const leftEnd = a.x <= b.x ? a : b; const rightEnd = a.x <= b.x ? b : a; const runY = Math.min(ISO_GRID_HEIGHT - 28, Math.max(a.y, b.y) + 34); const runMidX = (leftEnd.x + rightEnd.x) / 2;
     const offsetMath = isoGridOffsetMath(segment);
     let offsetGuideMarkup = '';
@@ -2186,7 +2186,7 @@ function isoGridExportSvgText() {
   clone.querySelectorAll('.iso-tap-pipe.selected').forEach(element => element.classList.remove('selected'));
   clone.querySelectorAll('[data-grid-symbol] circle[stroke="#f59e0b"]').forEach(element => element.remove());
   const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-  style.textContent = '.iso-tap-pipe{stroke:#111827;stroke-width:5;stroke-linecap:round}.iso-tap-pipe.complete{stroke:#16a34a;stroke-width:7}.iso-tap-hit{display:none}.iso-tap-node{fill:#fff;stroke:#111827;stroke-width:1.8}.iso-tap-witness,.iso-tap-dim{stroke:#2563eb;stroke-width:1;stroke-dasharray:1 4;stroke-linecap:round}.iso-tap-dim-bg{fill:#fff;stroke:#94a3b8;stroke-width:.8}.iso-tap-dim-text{fill:#111827;font-size:10px;font-weight:800;text-anchor:middle;font-family:monospace}.iso-tap-note{fill:#475569;stroke:#fff;stroke-width:3px;paint-order:stroke fill;text-anchor:middle;font-size:10px;font-family:monospace}';
+  style.textContent = '.iso-tap-pipe{stroke:#111827;stroke-width:5;stroke-linecap:round}.iso-tap-pipe.complete{stroke:#16a34a;stroke-width:7}.iso-tap-hit{display:none}.iso-tap-node{fill:#fff;stroke:#111827;stroke-width:1.8}.iso-tap-witness,.iso-tap-dim{stroke:#1e3a8a;stroke-width:1;stroke-dasharray:1 4;stroke-linecap:round}.iso-tap-dim-bg{fill:#fff;stroke:#94a3b8;stroke-width:.8}.iso-tap-dim-text{fill:#111827;font-size:10px;font-weight:800;text-anchor:middle;font-family:monospace}.iso-tap-note{fill:#475569;stroke:#fff;stroke-width:3px;paint-order:stroke fill;text-anchor:middle;font-size:10px;font-family:monospace}';
   clone.insertBefore(style, clone.firstChild);
   return new XMLSerializer().serializeToString(clone);
 }

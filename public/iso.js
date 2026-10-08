@@ -472,6 +472,12 @@ function isoSetActive(id) {
   });
   isoUpdateActiveControls();
   isoRenderSketch();
+  // Spool section IDs survive tee splits and removals; list position does not.
+  // Select the linked pipe on the actual drawing as well as the spool sketch.
+  if (typeof isoGridCurrent === 'function' && typeof isoGridSelectSegment === 'function') {
+    const index = isoGridCurrent().segments.findIndex(segment => Number(segment.legId) === Number(id));
+    if (index >= 0) isoGridSelectSegment(index);
+  }
 }
 
 function isoEditActive() {
