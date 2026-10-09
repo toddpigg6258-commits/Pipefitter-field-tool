@@ -10,5 +10,11 @@
   "appleProductId": null,
   "googleProductId": null,
   "billingImplemented": false,
-  "notes": "The app purchase does not itself authorize future subscription charges. Store billing, purchase validation, renewal consent and restore must be implemented and tested. This file never grants or revokes access."
+  "notes": "Owner has reaffirmed $19.99 initial charge and $9.99 yearly thereafter. No LLC filing, customer billing, or App Store/Play Console pricing is set up. Price disclosure, subscription consent, purchase validation, restore, cancellation, and access handling require implementation and review.",
+  "businessName": "MSN Ventures LLC",
+  "businessFormationState": "Alabama",
+  "businessStatus": "planned_not_formed",
+  "productName": "Pipefitter Field Tool",
+  "customerFacingPriceCopy": "Initial purchase: $19.99 USD, includes the first 12 months. Annual renewal beginning after year one: $9.99 USD every 12 months unless canceled.",
+  "implementationCaveat": "Higher initial price than renewal is NOT an eligible standard discounted introductory offer (Google Play introductory offer price must be <= base price). Design compliant purchase and renewal transactions on each store before promising automatic renewal. This plan is not configured or live."
 }
