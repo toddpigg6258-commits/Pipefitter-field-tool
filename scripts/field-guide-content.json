@@ -1,14 +1,14 @@
 {
-  "edition": "0.1",
+  "edition": "0.2",
   "pages": [
     {
       "title": "Pipefitter Field Guide",
-      "group": "TEST EDITION 0.1",
+      "group": "TEST EDITION 0.2",
       "body": [
         "Math, layout and drawing checks for the Pipefitter Field Tool app.",
         "An original pocket guide built around a simple sequence: establish a datum, solve the geometry, account for the actual fittings, then check the finished layout.",
-        "Includes worked examples, sixteenth-inch fractions, offset calculations, tee locations and dimension conventions. All example dimensions are invented for learning; they are not manufacturer fitting data.",
-        "First test edition • October 2026. Prepared for hands-on feedback. Technical review is still pending."
+        "Includes worked formulas, rigging calculations, model-specific torch guidance, wraparound marking and folded-paper saddle development. Example dimensions are for training.",
+        "Expanded test edition • October 2026. Prepared for hands-on feedback. Technical review is still pending."
       ],
       "example": null,
       "check": null,
@@ -30,44 +30,40 @@
           "Pages"
         ],
         [
-          "Using this guide; dimension notation",
-          "3–4"
+          "Basics, measurements and pipe geometry",
+          "3-22"
         ],
         [
-          "Fractions, rounding and conversions",
-          "5–8"
+          "Drawings, app controls and spool checks",
+          "23-31"
         ],
         [
-          "Field measurements and pipe identification",
-          "9–10"
-        ],
-        [
-          "Triangles, offsets, rolling offsets and slope",
-          "11–16"
-        ],
-        [
-          "Cut lengths, tees, flanges and valves",
-          "17–20"
-        ],
-        [
-          "Tube bend geometry and clocking",
-          "21–22"
-        ],
-        [
-          "ISO drawings and app controls",
-          "23–25"
-        ],
-        [
-          "Spools, joining checks and work planning",
-          "26–29"
-        ],
-        [
-          "Worked spool and glossary",
-          "30–31"
-        ],
-        [
-          "Technical sources and edition notes",
+          "Original sources and edition notes",
           "32"
+        ],
+        [
+          "Working formulas and circumferences",
+          "33-34"
+        ],
+        [
+          "Weights, CG and sling tension",
+          "35-39"
+        ],
+        [
+          "Torch setup and model-specific pressures",
+          "40-42"
+        ],
+        [
+          "Pipe wraparound and folded paper",
+          "43-44"
+        ],
+        [
+          "Saddle ordinates and worked templates",
+          "45-48"
+        ],
+        [
+          "Practical supplement sources",
+          "49-50"
         ]
       ],
       "diagram": null,
@@ -710,8 +706,8 @@
       "group": "REFERENCE",
       "body": [
         "This guide uses original explanations, independently calculated examples and newly drawn diagrams. It does not reproduce Audel text, page layouts, illustrations or tables. Sources below support unit definitions, basic geometry or direct readers to controlling technical information.",
-        "No manufacturer dimensions or installation procedures are licensed or republished here. Mention of a company or agency does not imply its endorsement.",
-        "Edition 0.1 is for app testing and technical review. Before commercial publication, have a qualified technical reviewer check the formulas, examples, terminology and scope. Confirm the final content and illustration rights, and record the reviewer and revision date.",
+        "Original chapters provide geometry and reference guidance. The practical supplement adds selected model-specific factual settings with attribution; it does not reproduce a complete manufacturer manual. Mention does not imply endorsement.",
+        "Edition 0.2 is for app testing and technical review. Before commercial publication, have a qualified technical reviewer check the formulas, examples, terminology and scope. Confirm the final content and illustration rights, and record the reviewer and revision date.",
         "Sources checked October 9, 2026 (UTC)."
       ],
       "example": null,
@@ -719,6 +715,352 @@
       "table": null,
       "diagram": null,
       "source": "[1] NIST: SI Units – Length\nhttps://www.nist.gov/pml/owm/si-units-length\n[2] Charlotte Pipe: Pressure Dimensional Catalog\nhttps://www.charlottepipe.com/technical-hub/pressure-dimensional-catalog\n[3] OpenStax: Right Triangle Trigonometry\nhttps://openstax.org/books/precalculus-2e/pages/5-4-right-triangle-trigonometry\n[4] Swagelok: Tube Fitter’s Manual resource\nhttps://www.swagelok.com/en/resources/tube-fitting-manual\n[5] OSHA: Control of Hazardous Energy\nhttps://www.osha.gov/control-hazardous-energy\n[6] OSHA: Welding, Cutting and Brazing Hazards\nhttps://www.osha.gov/welding-cutting-brazing/hazards-solutions"
+    },
+    {
+      "title": "Work a formula, one step at a time",
+      "group": "FORMULA WORKSHOP",
+      "body": [
+        "1. Sketch the part. Write the quantity you need and its units. Name every known value on the sketch; do not start by entering numbers into a calculator.",
+        "2. Select an equation whose assumptions match that sketch. Rearrange it for the unknown before substituting values. Use parentheses around a whole numerator or denominator.",
+        "3. Convert to one unit system. Set trigonometry to degrees for degree angles. Evaluate brackets, powers and roots before multiplication and division. Keep extra digits until the final answer.",
+        "4. Put the answer back into the original equation and estimate whether its size makes sense. Show the equation, substitution, result and check in the job record."
+      ],
+      "example": "Find an offset when travel T = 20 in and angle A = 30°.\nT = O / sin(A), so O = T × sin(A).\nO = 20 × sin(30°) = 20 × 0.5 = 10 in.\nBack-check: 10 / sin(30°) = 20 in.\n\nFind A when O = 10 in and T = 20 in:\nA = arcsin(O/T) = arcsin(0.5) = 30°.\nUse inverse sine, not 1/sin.",
+      "check": "An arcsin input outside -1 to +1 signals an invalid ratio for this triangle.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Circumference and equal stations",
+      "group": "FORMULA WORKSHOP",
+      "body": [
+        "Use actual outside diameter D for a pattern wrapped around the outside surface. Circumference C = pi × D. Radius r = D/2. A nominal pipe designation is not an outside diameter.",
+        "For N equal stations, spacing s = C/N and angular step = 360°/N. Measure distances along the paper baseline, not chord distances across the circular end.",
+        "Station k sits at k × C/N. Calculate each station from zero rather than repeatedly adding a rounded spacing. The last station closes on the first."
+      ],
+      "example": "Illustrative actual OD = 4.000 in; N = 16.\nC = pi × 4 = 12.56637 in.\ns = 12.56637 / 16 = 0.785398 in.\nAngular step = 22.5°.\nStation 4 = C/4 = 3.14159 in, at 90°.\nStation 8 = C/2 = 6.28319 in, at 180°.\nStation 16 = C = 12.56637 in, at 360°.",
+      "check": "If you measure the circumference directly with paper, use that measured working length for folding. Keep any tape tab outside it.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Estimate pipe weight",
+      "group": "RIGGING CALCULATIONS",
+      "body": [
+        "Prefer documented assembly weights or a verified weighing method. A geometric estimate needs actual dimensions, material weight density and every attached component.",
+        "For straight hollow round pipe: inside diameter d = D − 2t; metal area A = pi × (D² − d²)/4; volume V = A × L; weight W = V × gamma. D, d, t and L must use the same length unit.",
+        "Here gamma is weight per unit volume, not mass density. If mass is given in kilograms, convert mass to force using W = m × g; at g = 9.80665 m/s², 1000 kg corresponds to 9.80665 kN.",
+        "Add fittings, flanges, valves, attachments, contents and other carried items. Include suspended rigging in the hoist load; identify which weights pass through each sling. Unknown contents or weights must be resolved before lifting."
+      ],
+      "example": "Practice inputs only: D = 4 in, t = 0.25 in,\nL = 120 in, gamma = 0.283 lbf/in³.\nd = 3.5 in. A = pi(16 − 12.25)/4 = 2.94524 in².\nV = 353.429 in³. W = 100.020 lbf.\nAdd assumed attachments of 40 lbf: 140.020 lbf.\nThis estimate is not a verified lift weight.",
+      "check": "A hollow pipe calculation is wrong for a pipe full of liquid, plugged with solids or carrying uncounted fittings.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Find the center of gravity",
+      "group": "RIGGING CALCULATIONS",
+      "body": [
+        "For known component weights along one axis, xCG = sum(Wi × xi) / sum(Wi). Choose a common datum and locate each component at its own center of gravity.",
+        "For two vertical reactions at A and B, spacing S, with CG a distance x from A: VB = W × x/S; VA = W − VB. The support nearer the CG takes more vertical load.",
+        "This is a static two-support model. The CG must lie between the supports. A full assembly also needs transverse and vertical CG, stability, attachment strength and clearance evaluated. The hook must be positioned over the combined suspended CG. [8]"
+      ],
+      "example": "600 lbf centered at x = 2 ft; 400 lbf at x = 7 ft.\nTotal W = 1000 lbf.\nxCG = (600 × 2 + 400 × 7)/1000 = 4 ft.\nIf A is at 0 ft and B at 10 ft:\nVB = 1000 × 4/10 = 400 lbf.\nVA = 1000 − 400 = 600 lbf.\nCheck moment about A: 400 × 10 = 1000 × 4.",
+      "check": null,
+      "table": null,
+      "diagram": "cg",
+      "source": "[8] Static equilibrium principles; original example."
+    },
+    {
+      "title": "Two equal sling legs",
+      "group": "RIGGING CALCULATIONS",
+      "body": [
+        "For a centered, level load W on two equally loaded straight sling legs, measure angle A from the horizontal load line. Each leg carries vertical share W/2. Its tension T = W / (2 × sin(A)).",
+        "If the angle is measured from vertical instead, use cosine. Do not mix the two angle conventions. The included angle at the hook is a third, different angle.",
+        "When measuring sling length L from load attachment to hook and vertical rise H, sin(A) = H/L, so T = (W/2) × L/H. These are static forces; shock and acceleration are excluded. [7]"
+      ],
+      "example": "W = 2000 lbf; A = 60° from horizontal.\nT = 2000/(2 × 0.866025) = 1154.70 lbf per leg.\nAt 45°: T = 1414.21 lbf per leg.\nAt 30°: T = 2000 lbf per leg.\nCheck: 2 × 1154.70 × sin(60°) = 2000 lbf.",
+      "check": "The angles shown are arithmetic examples, not approved configurations. Lift-All advises against angles below 30° from horizontal.",
+      "table": null,
+      "diagram": "sling",
+      "source": "[7] Lift-All angle guidance; examples calculated independently."
+    },
+    {
+      "title": "Unequal sling loading",
+      "group": "RIGGING CALCULATIONS",
+      "body": [
+        "Do not divide weight equally when the CG is off center. First calculate each vertical share, then Ti = Vi/sin(Ai) for the angle of that leg from horizontal.",
+        "For a level rigid load with same-elevation attachment points and hook above the CG, let a and b be the horizontal distances from A and B to the hook vertical, and H the rise. Then LA = sqrt(a² + H²), LB = sqrt(b² + H²).",
+        "VA = W × b/(a+b); VB = W × a/(a+b). TA = VA × LA/H; TB = VB × LB/H. The inward horizontal forces must balance in this ideal model. Different elevations or out-of-plane geometry need a different analysis."
+      ],
+      "example": "W = 3000 lbf; a = 4 ft; b = 6 ft; H = 6 ft.\nVA = 1800 lbf; VB = 1200 lbf.\nLA = sqrt(52) = 7.2111 ft; LB = sqrt(72) = 8.4853 ft.\nTA = 1800 × 7.2111/6 = 2163.33 lbf.\nTB = 1200 × 8.4853/6 = 1697.06 lbf.\nHorizontal check: 1800 × 4/6 = 1200 × 6/6.\nBoth equal 1200 lbf inward.",
+      "check": "Neither the average tension nor the smaller tension can be used to select both legs.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Turn forces into a lift review",
+      "group": "RIGGING CALCULATIONS",
+      "body": [
+        "A tension calculation is a demand, not a sling rating. Compare demand with the manufacturer rating for the actual sling, hitch, angle and service conditions. Read whether a tag rates one leg or the complete assembly.",
+        "A rated two-leg assembly chart may already include the angle effect. Do not apply the angle factor twice. Do not assume four legs share load equally or that a basket always doubles usable capacity.",
+        "Inspect identification and condition before use. Remove defective gear from service; protect slings from damaging edges. Check shackles, hooks, attachment points and the supporting structure as well as the sling. [9]",
+        "A qualified lift planner must address load control, CG uncertainty, dynamic effects, hitch stability and any manufacturer reductions. Do not invent a general safety multiplier or use breaking strength as working load limit."
+      ],
+      "example": "Calculated leg demand = 2163.33 lbf.\nAn assumed 2000 lbf allowable leg capacity is insufficient.\nAn assumed 3000 lbf capacity passes only this numerical comparison; the actual configuration, hardware and lift plan still require verification.",
+      "check": "Keep people clear of suspended loads. Stop if weight, CG, attachment rating or sling identification is unknown.",
+      "table": null,
+      "diagram": null,
+      "source": "[9] OSHA 1926.251 and manufacturer rating instructions; this is a training calculation, not a lift plan."
+    },
+    {
+      "title": "Oxy-acetylene: prepare the setup",
+      "group": "TORCH WORK",
+      "body": [
+        "This section is for trained operators cutting suitable ferrous material with oxygen and acetylene. Welding, heating, propane and other tip families require their own instructions. Identify the torch, attachment, tip, regulators, hose and protective devices before selecting settings.",
+        "Secure cylinders upright. Keep oxygen equipment free of oil and grease. Check hoses, fittings, seats and tips for damage; use compatible equipment and the manufacturer-required reverse-flow and flashback protection. Confirm that the gas supply can sustain the selected tip flow. [10, 11]",
+        "Follow the site hot-work process: isolation and verification of the workpiece, fire control, ventilation and appropriate eye, face and body protection. Do not torch an unknown or closed vessel or a live line.",
+        "Use the exact equipment manual for connection, valve-opening and leak-test procedures. An approved leak solution is used, never a flame. Do not light equipment with a leak or damaged parts."
+      ],
+      "example": null,
+      "check": "Acetylene delivery must not exceed 15 psig. That limit is not a recommended setting; the selected tip may require less. [10]",
+      "table": null,
+      "diagram": null,
+      "source": "[10] OSHA 1910.253. [11] Miller setup guidance. See source links on page 50."
+    },
+    {
+      "title": "Gauge pressures by thickness",
+      "group": "TORCH WORK",
+      "body": [
+        "Example chart scope: Smith SC12 acetylene cutting tips on compatible SC-series equipment; Miller GE/27.0, June 2026, page 3. These are regulator delivery pressures in psig, not cylinder contents-gauge readings. [12]",
+        "Use only if the installed equipment matches. Other brands and even Smith MC12 tips have different values. Read the full current chart and equipment manual before setting the regulators."
+      ],
+      "example": null,
+      "check": "Select by thickness being cut, not pipe diameter. A bevel has a longer cut path; use applicable manufacturer guidance, not an invented pressure increase.",
+      "table": [
+        [
+          "Steel in",
+          "SC12 tip",
+          "Oxygen psig",
+          "Acetylene psig"
+        ],
+        [
+          "1/4",
+          "SC12-0",
+          "30",
+          "10"
+        ],
+        [
+          "3/8",
+          "SC12-0",
+          "35",
+          "10"
+        ],
+        [
+          "1/2",
+          "SC12-1",
+          "35",
+          "10"
+        ],
+        [
+          "5/8",
+          "SC12-1",
+          "40",
+          "10"
+        ],
+        [
+          "3/4",
+          "SC12-2",
+          "36",
+          "10"
+        ],
+        [
+          "1",
+          "SC12-2",
+          "41",
+          "10"
+        ],
+        [
+          "1-1/2",
+          "SC12-3",
+          "42",
+          "10"
+        ],
+        [
+          "2",
+          "SC12-3",
+          "47",
+          "10"
+        ]
+      ],
+      "diagram": null,
+      "source": "[12] Selected factual values from Smith/Miller GE/27.0; original table layout. No universal pressure chart is implied."
+    },
+    {
+      "title": "Set, light and shut down",
+      "group": "TORCH WORK",
+      "body": [
+        "Delivery pressure is checked under the flow conditions specified for that torch, including cutting-oxygen flow when required. A closed-valve static reading may differ. Hose losses and flow restrictions matter. Purge oxygen and fuel separately in a ventilated area away from ignition sources. [11]",
+        "For the Smith cutting-attachment procedure in [13], after setup, leak testing and purging: open fuel about 1/8 turn and ignite with a friction spark lighter. Increase fuel until smoke clears; add preheat oxygen until the acetylene feather disappears into the inner cones. Follow the manual for stand-off and cutting technique.",
+        "For that Smith attachment, normal shutdown closes preheat oxygen, then fuel, then cylinder valves. Bleed fuel and oxygen separately as directed until their gauges show zero, close torch valves and back out regulator adjustments. Follow [13] for the full sequence; other equipment may differ.",
+        "Popping, sustained hissing, flame inside the torch or overheating requires stopping under the equipment emergency procedure and inspection before reuse. Do not keep cutting by turning pressures up."
+      ],
+      "example": null,
+      "check": "This is a companion to supervised training and the equipment manual. It is not a complete startup or emergency procedure.",
+      "table": null,
+      "diagram": null,
+      "source": "[11] Miller setup guidance. [13] Smith OM-262659, sections 6 and 9; confirm the revision for your equipment."
+    },
+    {
+      "title": "Use a pipe wraparound",
+      "group": "PIPE LAYOUT",
+      "body": [
+        "1. Secure the cold pipe against rolling. Clean the layout band. Select an undamaged wrap long enough to overlap and wide enough to stay square; obey its temperature limit. A wraparound is a marking guide, not a torch heat shield. [14]",
+        "2. Mark the desired cut location from a verified datum. Bring one straight long edge of the wrap to that mark and wrap snugly around the pipe without twisting.",
+        "3. At the overlap, align the long edge with itself. Hold the layers flat. The edge must meet continuously with no step; a spiral or skewed overlap makes a sloping cut line.",
+        "4. Trace along that same edge around the full circumference, repositioning your hand without shifting the wrap. Check closure and measure from the datum at several positions. Remove the wrap before hot work."
+      ],
+      "example": null,
+      "check": "A dented or out-of-round pipe can prevent a clean square wrap. Resolve the geometry rather than forcing a distorted guide.",
+      "table": null,
+      "diagram": "wrap",
+      "source": "[14] Jackson Safety tool purpose; original marking workflow."
+    },
+    {
+      "title": "Cut and fold register paper",
+      "group": "SADDLE TEMPLATES",
+      "body": [
+        "Use dry, unstretched register paper wide enough for the largest ordinate plus a holding margin. Keep it away from heat. If it is too narrow, use wider drafting paper; do not omit part of the curve.",
+        "1. Wrap the strip once around the actual branch OD with square overlapping edges. Mark where the starting end meets the strip. Unwrap and cut at that mark: the working length is exactly one circumference. Add any fastening tab later.",
+        "2. Bring the two short ends together and crease: two equal panels. Keep folding the stacked strip end-to-end three more times, aligning edges each time. Four halvings give 16 panels. Unfold completely.",
+        "3. Number the edges and creases 0 through 16. Draw each crease straight across the width, perpendicular to a common long-edge baseline. These are the ordinate station lines. Stations 0 and 16 become the same seam when wrapped."
+      ],
+      "example": "Fold count: 1 → 2 panels; 2 → 4; 3 → 8; 4 → 16.\nEach panel represents 360°/16 = 22.5°.\nTo use 12 stations, measure C/12 instead; repeated halving does not produce 12 equal divisions.",
+      "check": "Folding locates stations only. It does not determine the saddle heights. Calculate and mark those after unfolding.",
+      "table": null,
+      "diagram": "stations",
+      "source": null
+    },
+    {
+      "title": "Calculate a 90-degree saddle",
+      "group": "SADDLE TEMPLATES",
+      "body": [
+        "Scope: round branch meeting a round main at 90°, with intersecting axes, branch radius r no greater than main radius R. Use actual outside radii. This is the outside-surface branch-end profile, not the opening in the main.",
+        "Look down the branch axis. Station 0 lies in the direction of the main axis; station 4 is 90° around the branch. At angle A, the side displacement is y = r × sin(A). The main surface height is z = sqrt(R² − y²).",
+        "The lowest contact height is zmin = sqrt(R² − r²). Measure each cutback ordinate O from the plane of the longest fingers, toward the retained pipe: O = sqrt(R² − (r × sin(A))²) − sqrt(R² − r²).",
+        "On paper, use the long edge as that longest-tip baseline. Plot O on each station into the retained side and connect with a fair curve. The region between baseline and curve is waste. Do not cut the stacked folded paper."
+      ],
+      "example": null,
+      "check": "This formula excludes offsets, oblique branches, bevels, root gap and reinforcement. Pressure-piping branch design and weld preparation require the approved detail.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Worked saddle: 4 OD onto 8 OD",
+      "group": "SADDLE TEMPLATES",
+      "body": [
+        "Illustrative actual ODs are 4.000 and 8.000 in, not nominal pipe sizes. r = 2 in; R = 4 in; C = 12.56637 in; station spacing = 0.785398 in.",
+        "At station 2, A = 45°: y² = (2 × sin45°)² = 2. O = sqrt(16 − 2) − sqrt(16 − 4) = 0.277556 in."
+      ],
+      "example": null,
+      "check": "All ordinates are nonnegative. The two longest fingers are at stations 4 and 12. The two deepest cutbacks are at 0 and 8. Diagram is schematic, not a full-size template.",
+      "table": [
+        [
+          "Station(s)",
+          "Angle example",
+          "O, inches"
+        ],
+        [
+          "0, 8, 16",
+          "0° / 180° / 360°",
+          "0.535898"
+        ],
+        [
+          "1, 7, 9, 15",
+          "22.5°",
+          "0.461992"
+        ],
+        [
+          "2, 6, 10, 14",
+          "45°",
+          "0.277556"
+        ],
+        [
+          "3, 5, 11, 13",
+          "67.5°",
+          "0.083543"
+        ],
+        [
+          "4, 12",
+          "90° / 270°",
+          "0.000000"
+        ]
+      ],
+      "diagram": "saddle",
+      "source": null
+    },
+    {
+      "title": "Equal-size saddle and more stations",
+      "group": "SADDLE TEMPLATES",
+      "body": [
+        "When R = r, sqrt(R² − r²) = 0, so O = R × abs(cos(A)). The absolute value keeps the cutback nonnegative around the full circle.",
+        "For actual equal ODs of 4 in, R = 2 in. At 0°, 22.5°, 45°, 67.5° and 90°, the cutbacks are 2.0000, 1.8478, 1.4142, 0.7654 and 0.0000 in. Repeat by symmetry around the other quadrants.",
+        "Large pipes or rapidly changing curves may need more stations. Another halving produces 32 panels at 11.25° each. Recalculate ordinates at those angles; do not just average neighboring heights.",
+        "Equal-size 90° saddles have sharp changes at the longest fingers. Preserve those intersections in the geometric pattern; do not round them away by eye. Fit and finish still follow the approved joint detail."
+      ],
+      "example": "At A = 67.5° and R = 2 in:\nO = 2 × abs(cos67.5°) = 0.765367 in.\nFor 32 stations, station 6 is 6 × 11.25° = 67.5°,\nso it must reproduce that same ordinate.",
+      "check": "The blank paper width must exceed the greatest ordinate plus a holding margin. A 2 in-wide strip cannot hold a 2 in ordinate and a useful margin.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Transfer, trim and check the saddle",
+      "group": "SADDLE TEMPLATES",
+      "body": [
+        "1. With paper flat, connect calculated marks smoothly, preserving any genuine corner. Label main OD, branch OD, angle, station 0, retained side and baseline. Cut only the single-layer developed curve.",
+        "2. Wrap the paper around the branch, align stations 0 and 16 without adding overlap to the working circumference, and secure with a separate tape tab. Check that the baseline is square and the seam closes.",
+        "3. Align the station-0 direction with the main centerline plane. Trace the curve. Mark the scrap side clearly. Remove paper and wraparound before cutting.",
+        "4. Cut on the scrap side, leaving any finishing allowance required by the job. Trial-fit to a verified main or matching gauge and inspect the whole circumference. Apply the approved bevel and root gap separately.",
+        "5. Check axial length from the correct datum: this template references the longest fingers. A centerline-to-centerline dimension is not automatically the same length."
+      ],
+      "example": null,
+      "check": "Practice on paper or scrap first. A close geometric fit does not qualify a pressure connection, establish reinforcement or approve a welding procedure.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Practical supplement: sources",
+      "group": "REFERENCE",
+      "body": [
+        "Edition 0.2 adds formula practice, static rigging calculations, model-specific torch references and original paper-template instructions. Independently computed examples and diagrams are training material, not job approvals.",
+        "Saddle ordinates are derived here from the intersection of two perpendicular circular cylinders. Validate a paper trial on the actual diameters before fabrication. No commercial manual text or saddle table was copied.",
+        "A qualified rigging reviewer and oxy-fuel instructor must review these chapters before commercial release. Manufacturer values are selected factual data with attribution, not a licensed reproduction of a complete chart."
+      ],
+      "example": null,
+      "check": null,
+      "table": null,
+      "diagram": null,
+      "source": "[7] Lift-All: Effect of sling angle\nhttps://lift-all.com/product-files/catalog/effect-of-angle-chart.pdf\n[8] OpenStax: Conditions for static equilibrium\nhttps://openstax.org/books/university-physics-volume-1/pages/12-1-conditions-for-static-equilibrium\n[9] OSHA 1926.251: Rigging equipment\nhttps://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.251"
+    },
+    {
+      "title": "Torch and marking references",
+      "group": "REFERENCE",
+      "body": [
+        "Read the complete current equipment instructions. The retrieved Smith manual URL retains an older filename but serves revision H. Recheck the actual revision and chart before operation.",
+        "Settings on page 41 apply only to the named SC12 equipment family. To prepare another table, record the torch and attachment models, tip series, gas, thickness, hose arrangement and manufacturer source."
+      ],
+      "example": null,
+      "check": null,
+      "table": null,
+      "diagram": null,
+      "source": "[10] OSHA 1910.253: Oxygen-fuel equipment\nhttps://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.253\n[11] Miller: Oxy-fuel setup checks\nhttps://www.millerwelds.com/en-us/resources/knowledge-hub/welding-safety/10-steps-for-safe-oxy-fuel-torch-setup\n[12] Smith/Miller GE/27.0, June 2026, p.3\nhttps://www.millerwelds.com/-/media/miller-electric/import/specsheets/file/ge270-cutting-and-gouging-tips--english.pdf\n[13] Smith OM-262659, retrieved revision H\nhttps://www.millerwelds.com/files/owners-manuals/O262659E_MIL.pdf\n[14] Jackson Safety: Wrap-A-Round tools\nhttps://www.jacksonsafety.eu/product-page/wrap-a-round-tools-1"
     }
   ],
   "sources": [
@@ -751,6 +1093,46 @@
       "6",
       "OSHA: Welding, Cutting and Brazing Hazards",
       "https://www.osha.gov/welding-cutting-brazing/hazards-solutions"
+    ],
+    [
+      "7",
+      "Lift-All: Effect of sling angle",
+      "https://lift-all.com/product-files/catalog/effect-of-angle-chart.pdf"
+    ],
+    [
+      "8",
+      "OpenStax: Conditions for static equilibrium",
+      "https://openstax.org/books/university-physics-volume-1/pages/12-1-conditions-for-static-equilibrium"
+    ],
+    [
+      "9",
+      "OSHA 1926.251: Rigging equipment",
+      "https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.251"
+    ],
+    [
+      "10",
+      "OSHA 1910.253: Oxygen-fuel equipment",
+      "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.253"
+    ],
+    [
+      "11",
+      "Miller: Oxy-fuel setup checks",
+      "https://www.millerwelds.com/en-us/resources/knowledge-hub/welding-safety/10-steps-for-safe-oxy-fuel-torch-setup"
+    ],
+    [
+      "12",
+      "Smith/Miller GE/27.0, June 2026, p.3",
+      "https://www.millerwelds.com/-/media/miller-electric/import/specsheets/file/ge270-cutting-and-gouging-tips--english.pdf"
+    ],
+    [
+      "13",
+      "Smith OM-262659, retrieved revision H",
+      "https://www.millerwelds.com/files/owners-manuals/O262659E_MIL.pdf"
+    ],
+    [
+      "14",
+      "Jackson Safety: Wrap-A-Round tools",
+      "https://www.jacksonsafety.eu/product-page/wrap-a-round-tools-1"
     ]
   ]
 }

@@ -12,11 +12,11 @@ ROOT=REPO.parent
 P=[]
 def page(title,group,body,example=None,check=None,table=None,diagram=None,source=None):
  P.append(dict(title=title,group=group,body=body,example=example,check=check,table=table,diagram=diagram,source=source))
-page('Pipefitter Field Guide','TEST EDITION 0.1',[
+page('Pipefitter Field Guide','TEST EDITION 0.2',[
  'Math, layout and drawing checks for the Pipefitter Field Tool app.',
  'An original pocket guide built around a simple sequence: establish a datum, solve the geometry, account for the actual fittings, then check the finished layout.',
  'Includes worked examples, sixteenth-inch fractions, offset calculations, tee locations and dimension conventions. All example dimensions are invented for learning; they are not manufacturer fitting data.',
- 'First test edition • October 2026. Prepared for hands-on feedback. Technical review is still pending.'],diagram='tee')
+ 'Expanded test edition • October 2026. Prepared for hands-on feedback. Technical review is still pending.'],diagram='tee')
 page('Find it quickly','CONTENTS',['Choose a topic in the app reader, or use these page numbers in the PDF.'],table=[['Topic','Pages'],['Using this guide; dimension notation','3–4'],['Fractions, rounding and conversions','5–8'],['Field measurements and pipe identification','9–10'],['Triangles, offsets, rolling offsets and slope','11–16'],['Cut lengths, tees, flanges and valves','17–20'],['Tube bend geometry and clocking','21–22'],['ISO drawings and app controls','23–25'],['Spools, joining checks and work planning','26–29'],['Worked spool and glossary','30–31'],['Technical sources and edition notes','32']])
 page('Use the right reference','START HERE',[
  'Use this guide to organize measurements and check layout arithmetic. A sketch, a dimension and a fitting catalog each answer a different question. Keep their purposes separate.',
@@ -157,10 +157,14 @@ SOURCES=[
  ('6','OSHA: Welding, Cutting and Brazing Hazards','https://www.osha.gov/welding-cutting-brazing/hazards-solutions')]
 page('Sources and edition notes','REFERENCE',[
  'This guide uses original explanations, independently calculated examples and newly drawn diagrams. It does not reproduce Audel text, page layouts, illustrations or tables. Sources below support unit definitions, basic geometry or direct readers to controlling technical information.',
- 'No manufacturer dimensions or installation procedures are licensed or republished here. Mention of a company or agency does not imply its endorsement.',
- 'Edition 0.1 is for app testing and technical review. Before commercial publication, have a qualified technical reviewer check the formulas, examples, terminology and scope. Confirm the final content and illustration rights, and record the reviewer and revision date.',
+ 'Original chapters provide geometry and reference guidance. The practical supplement adds selected model-specific factual settings with attribution; it does not reproduce a complete manufacturer manual. Mention does not imply endorsement.',
+ 'Edition 0.2 is for app testing and technical review. Before commercial publication, have a qualified technical reviewer check the formulas, examples, terminology and scope. Confirm the final content and illustration rights, and record the reviewer and revision date.',
  'Sources checked October 9, 2026 (UTC).'],source='\n'.join(f'[{n}] {name}\n{url}' for n,name,url in SOURCES))
-assert len(P)==32,len(P)
+exec((REPO/'scripts/field-guide-practical.py').read_text())
+TOTAL=len(P)
+assert TOTAL==50,TOTAL
+P[1]['table']=[['Topic','Pages'],['Basics, measurements and pipe geometry','3-22'],['Drawings, app controls and spool checks','23-31'],['Original sources and edition notes','32'],['Working formulas and circumferences','33-34'],['Weights, CG and sling tension','35-39'],['Torch setup and model-specific pressures','40-42'],['Pipe wraparound and folded paper','43-44'],['Saddle ordinates and worked templates','45-48'],['Practical supplement sources','49-50']]
+P[0]['body'][2]='Includes worked formulas, rigging calculations, model-specific torch guidance, wraparound marking and folded-paper saddle development. Example dimensions are for training.'
 NAVY='#10263d'; BLUE='#1e3a8a'; TEAL='#087e8b'; INK='#26374a'; MUTED='#596b7c'
 def diagram(kind):
  d=Drawing(320,115)
@@ -169,7 +173,32 @@ def diagram(kind):
   if dash:z.strokeDashArray=dash
   d.add(z)
  def label(x,y,t,c=MUTED,size=10):d.add(String(x,y,t,fontName='Helvetica',fontSize=size,fillColor=HexColor(c)))
- if kind=='tee':
+ if kind=='cg':
+  line(25,45,295,45);line(25,20,25,70,TEAL,2);line(295,20,295,70,TEAL,2);line(133,45,133,98,BLUE,2)
+  label(12,7,'A: 600');label(251,7,'B: 400');label(105,100,'CG: 1000 lbf');label(58,63,'4 ft');label(197,63,'6 ft')
+ elif kind=='sling':
+  line(40,20,280,20);line(40,20,160,105,TEAL,3);line(280,20,160,105,TEAL,3);line(160,20,160,105,BLUE,1,[2,3])
+  label(62,28,'A');label(98,70,'L');label(166,59,'H');label(125,3,'Load W');label(6,98,'A measured from horizontal',size=9)
+ elif kind=='wrap':
+  line(25,30,295,30);line(25,90,295,90);line(120,30,120,90,TEAL,3);line(190,30,190,90,TEAL,3)
+  line(120,70,190,70,BLUE,1,[2,3]);label(116,100,'Square band');label(196,65,'Overlap flat',size=9);label(85,6,'Align the same long edge',size=9)
+ elif kind=='stations':
+  for y in [25,80]:line(15,y,303,y,TEAL,1)
+  for k in range(17):
+   x=15+18*k;line(x,25,x,80,BLUE,1,[2,2]);label(x-3,12,str(k),size=7)
+  label(25,95,'16 panels = 16 equal arcs; seam is 0 / 16',size=9)
+ elif kind=='saddle':
+  vals=[math.sqrt(16-4*math.sin(k*math.pi/8)**2)-math.sqrt(12) for k in range(17)]
+  line(15,20,303,20,BLUE,1)
+  for k,v in enumerate(vals):
+   x=15+18*k;y=20+v*110;line(x,20,x,y,BLUE,1,[2,2]);d.add(Circle(x,y,2,fillColor=HexColor(TEAL),strokeColor=HexColor(TEAL)))
+  pts=[]
+  for k in range(161):
+   a=k*math.pi/80;pts.extend([15+1.8*k,20+(math.sqrt(16-4*math.sin(a)**2)-math.sqrt(12))*110])
+  d.add(PolyLine(pts,strokeColor=HexColor(TEAL),strokeWidth=2))
+  for k in [0,4,8,12,16]:label(12+18*k,6,str(k),size=8)
+  label(52,96,'RETAIN ABOVE CURVE / WASTE BELOW',size=9)
+ elif kind=='tee':
   line(22,60,298,60);line(105,60,105,106);d.add(Circle(105,60,4,fillColor=HexColor(TEAL),strokeColor=HexColor(TEAL)))
   for x in [22,105,298]:line(x,57,x,22,BLUE,1,[2,3])
   line(22,25,105,25,BLUE,1,[2,3]);line(105,25,298,25,BLUE,1,[2,3]);label(45,10,'L1');label(191,10,'L2');label(115,92,'Branch');label(14,72,'A');label(292,72,'B')
@@ -187,8 +216,8 @@ def diagram(kind):
 style=ParagraphStyle('body',fontName='Helvetica',fontSize=10.2,leading=14.7,textColor=HexColor(INK),spaceAfter=9)
 small=ParagraphStyle('small',parent=style,fontSize=8.1,leading=10.6)
 # Dedicated 6 x 9 inch pocket format; one topic per physical page.
-OUT=ROOT/'output/pdf/Pipefitter-Field-Guide-Test-Edition-01.pdf';OUT.parent.mkdir(parents=True,exist_ok=True)
-c=canvas.Canvas(str(OUT),pagesize=(432,648));c.setTitle('Pipefitter Field Guide - Test Edition 0.1');c.setAuthor('Pipefitter Field Tool')
+OUT=ROOT/'output/pdf/Pipefitter-Field-Guide-Test-Edition-02.pdf';OUT.parent.mkdir(parents=True,exist_ok=True)
+c=canvas.Canvas(str(OUT),pagesize=(432,648));c.setTitle('Pipefitter Field Guide - Test Edition 0.2');c.setAuthor('Pipefitter Field Tool')
 def para(t,x,y,w,sty=style):
  p=Paragraph(html.escape(t).replace('\n','<br/>'),sty);_,h=p.wrap(w,1000);p.drawOn(c,x,y-h);return y-h-9
 heights=[]
@@ -213,11 +242,11 @@ for i,p in enumerate(P,1):
  if p['source']: y=para(p['source'],32,y,368,ParagraphStyle('source',parent=small,fontSize=7.6,leading=10,wordWrap='CJK'))
  assert y>43,(i,p['title'],y)
  heights.append(y)
- if y>210 and i not in (1,2,32):
+ if y>210 and p['group'] not in ('REFERENCE','CONTENTS','TEST EDITION 0.2'):
   c.setFont('Helvetica',7);c.setFillColor(HexColor(MUTED));c.drawString(32,138,'FIELD NOTES / TEST FEEDBACK')
   c.setStrokeColor(HexColor('#e2e9ef'))
   for note_y in (121,99,77):c.line(32,note_y,400,note_y)
- c.setStrokeColor(HexColor('#d7e0e8'));c.line(32,35,400,35);c.setFont('Helvetica',7);c.setFillColor(HexColor(MUTED));c.drawString(32,22,'PIPEFITTER FIELD TOOL  •  TEST EDITION 0.1');c.drawRightString(400,22,f'{i:02d} / 32');c.showPage()
+ c.setStrokeColor(HexColor('#d7e0e8'));c.line(32,35,400,35);c.setFont('Helvetica',7);c.setFillColor(HexColor(MUTED));c.drawString(32,22,'PIPEFITTER FIELD TOOL  •  TEST EDITION 0.2');c.drawRightString(400,22,f'{i:02d} / {TOTAL}');c.showPage()
 c.save()
 # Same source content in a phone-friendly HTML reader, with real anchor navigation.
 parts=[]
@@ -231,22 +260,22 @@ for i,p in enumerate(P,1):
  if p['source']:
   src=html.escape(p['source']);src=re.sub(r'(https://[^\s<]+)',r'<a href="\1" target="_blank" rel="noopener">\1</a>',src)
   b+='<p class="source">'+src.replace('\n','<br>')+'</p>'
- parts.append(f'<article id="p{i}" data-page="{i}"><span class="eyebrow">{html.escape(p["group"])} · {i:02d} / 32</span><h1>{html.escape(p["title"])}</h1>{b}</article>')
+ parts.append(f'<article id="p{i}" data-page="{i}"><span class="eyebrow">{html.escape(p["group"])} · {i:02d} / {TOTAL}</span><h1>{html.escape(p["title"])}</h1>{b}</article>')
 options=''.join(f'<option value="p{i}">{i:02d} · {html.escape(p["title"])}</option>' for i,p in enumerate(P,1))
 web='''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Pipefitter Field Guide</title><style>
 *{box-sizing:border-box}body{margin:0;background:#e9eef3;color:#26374a;font:17px/1.6 system-ui,sans-serif}header{position:sticky;top:0;background:#10263d;color:white;padding:12px 16px;z-index:2}header strong{display:block;font-size:16px}nav{display:flex;gap:8px;margin-top:8px;align-items:center}select{min-width:0;flex:1;max-width:640px}select,button{font:inherit;min-height:44px;border:1px solid #a3b5c5;border-radius:6px;padding:6px;background:white;color:#10263d}button{cursor:pointer}header a{color:#cbe7ff;font-size:14px}main{max-width:760px;margin:auto;padding:16px}article{scroll-margin-top:135px;background:white;padding:clamp(18px,5vw,42px);margin:0 0 20px;border-radius:10px;box-shadow:0 2px 8px #10263d0d}h1{font-size:clamp(25px,5vw,34px);line-height:1.2;color:#10263d;margin:12px 0 22px}p{margin:0 0 17px}.eyebrow{color:#087e8b;font-size:12px;font-weight:800;letter-spacing:1px}svg{display:block;max-width:100%;height:auto;margin:24px auto}.example{padding:18px;background:#edf5f6;border-left:4px solid #087e8b;margin:20px 0;font-variant-numeric:tabular-nums}.example>b{font-size:12px;color:#087e8b}.example p{margin:8px 0 0}.check{color:#075d67}.source{font-size:12px;overflow-wrap:anywhere;color:#596b7c}.source a{color:#1e3a8a}.table-wrap{overflow-x:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;vertical-align:top;padding:9px;border-bottom:1px solid #d7e0e8}th{background:#e8eef5}footer{text-align:center;padding:20px;font-size:13px}@media print{header{position:static}article{page-break-after:always;box-shadow:none}body{background:white}}
-</style></head><body><header><strong>PIPEFITTER FIELD GUIDE · Test edition 0.1</strong><nav><button id="prev" aria-label="Previous topic">‹</button><select id="topics" aria-label="Choose a guide topic">OPTIONS</select><button id="next" aria-label="Next topic">›</button></nav><a href="./resources/Pipefitter-Field-Guide-Test-Edition-01.pdf" target="_blank" rel="noopener">Download the 32-page PDF</a></header><main>ARTICLES</main><footer>Original test edition · Technical review pending · October 2026</footer><script>
+</style></head><body><header><strong>PIPEFITTER FIELD GUIDE · Test edition 0.2</strong><nav><button id="prev" aria-label="Previous topic">‹</button><select id="topics" aria-label="Choose a guide topic">OPTIONS</select><button id="next" aria-label="Next topic">›</button></nav><a href="./resources/Pipefitter-Field-Guide-Test-Edition-02.pdf" target="_blank" rel="noopener">Download the TOTAL_PAGES-page PDF</a></header><main>ARTICLES</main><footer>Original test edition · Technical review pending · October 2026</footer><script>
 const topics=document.getElementById('topics');
-function navigate(id){const page=document.getElementById(id);if(page){history.replaceState(null,'','#'+id);topics.value=id;page.scrollIntoView({behavior:'auto',block:'start'});document.getElementById('prev').disabled=id==='p1';document.getElementById('next').disabled=id==='p32';}}
+function navigate(id){const page=document.getElementById(id);if(page){history.replaceState(null,'','#'+id);topics.value=id;page.scrollIntoView({behavior:'auto',block:'start'});document.getElementById('prev').disabled=id==='p1';document.getElementById('next').disabled=id==='pTOTAL_PAGES';}}
 topics.addEventListener('change',()=>navigate(topics.value));
 document.getElementById('prev').onclick=()=>navigate('p'+Math.max(1,Number(topics.value.slice(1))-1));
-document.getElementById('next').onclick=()=>navigate('p'+Math.min(32,Number(topics.value.slice(1))+1));
+document.getElementById('next').onclick=()=>navigate('p'+Math.min(TOTAL_PAGES,Number(topics.value.slice(1))+1));
 window.addEventListener('hashchange',()=>navigate(location.hash.slice(1)));
 if(location.hash)requestAnimationFrame(()=>navigate(location.hash.slice(1)));else document.getElementById('prev').disabled=true;
-const watcher=new IntersectionObserver(entries=>{for(const e of entries)if(e.isIntersecting){topics.value=e.target.id;document.getElementById('prev').disabled=e.target.id==='p1';document.getElementById('next').disabled=e.target.id==='p32';}}, {rootMargin:'-140px 0px -55% 0px',threshold:0});
+const watcher=new IntersectionObserver(entries=>{for(const e of entries)if(e.isIntersecting){topics.value=e.target.id;document.getElementById('prev').disabled=e.target.id==='p1';document.getElementById('next').disabled=e.target.id==='pTOTAL_PAGES';}}, {rootMargin:'-140px 0px -55% 0px',threshold:0});
 document.querySelectorAll('article').forEach(el=>watcher.observe(el));
-</script></body></html>'''.replace('OPTIONS',options).replace('ARTICLES',''.join(parts))
+</script></body></html>'''.replace('TOTAL_PAGES',str(TOTAL)).replace('OPTIONS',options).replace('ARTICLES',''.join(parts))
 (REPO/'public/field-guide.html').write_text(web)
-(REPO/'public/resources/Pipefitter-Field-Guide-Test-Edition-01.pdf').write_bytes(OUT.read_bytes())
-(REPO/'scripts/field-guide-content.json').write_text(json.dumps({'edition':'0.1','pages':P,'sources':SOURCES},ensure_ascii=False,indent=2))
+(REPO/'public/resources/Pipefitter-Field-Guide-Test-Edition-02.pdf').write_bytes(OUT.read_bytes())
+(REPO/'scripts/field-guide-content.json').write_text(json.dumps({'edition':'0.2','pages':P,'sources':SOURCES},ensure_ascii=False,indent=2))
 print(json.dumps({'pages':len(P),'minimum_bottom_y':round(min(heights),1),'pdf_bytes':OUT.stat().st_size,'html_bytes':len(web.encode()),'word_count':sum(len(' '.join(p['body']).split())+len((p['example'] or '').split()) for p in P)}))
