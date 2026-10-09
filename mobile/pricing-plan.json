@@ -1,0 +1,14 @@
+{
+  "status": "owner_confirmed_not_configured_in_stores",
+  "currency": "USD",
+  "initialPriceMinorUnits": 1999,
+  "initialAccessMonths": 12,
+  "annualRenewalPriceMinorUnits": 999,
+  "renewalPeriodMonths": 12,
+  "renewalBeginsAfterInitialAccess": true,
+  "requiresCustomerSubscriptionConsent": true,
+  "appleProductId": null,
+  "googleProductId": null,
+  "billingImplemented": false,
+  "notes": "The app purchase does not itself authorize future subscription charges. Store billing, purchase validation, renewal consent and restore must be implemented and tested. This file never grants or revokes access."
+}

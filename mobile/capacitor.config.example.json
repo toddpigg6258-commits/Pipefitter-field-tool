@@ -1,0 +1,7 @@
+{
+  "appId": "com.example.pipefitter",
+  "appName": "Pipefitter Field Tool",
+  "webDir": "www",
+  "backgroundColor": "#0a1220",
+  "loggingBehavior": "debug"
+}

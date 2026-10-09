@@ -1,0 +1,9 @@
+node_modules/
+www/
+capacitor.config.json
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+.env*
+!.env.example
