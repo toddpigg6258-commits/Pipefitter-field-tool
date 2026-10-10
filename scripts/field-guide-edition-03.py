@@ -24,7 +24,7 @@ P[40].update(
  group='ACETYLENE CUTTING PRESSURES',
  body=[
   'Harris V1-101 single-piece acetylene HAND-CUTTING tips for relatively clean steel, compatible with identified V-Series and Victor-style torches. Manufacturer chart PN 9700378 (08/2023), page 6. [15]',
-  'The pressure columns are oxygen and acetylene delivery pressures in PSIG for CUTTING. They are NOT welding-tip settings. Values apply only to the exact tip series and compatible equipment. Recheck the current Harris data for torch, hose and required flow.'
+  'The oxygen pressure is for the cutting operation; oxygen and acetylene delivery values are in PSIG for CUTTING. They are NOT welding-tip settings. Values apply only to the exact tip series and compatible equipment. Recheck the current Harris data for torch, hose and required flow.'
  ],
  table=[
   ['Steel thickness in','Tip size','Oxygen psig','Acetylene psig'],
@@ -56,7 +56,7 @@ P[41].update(
   ['1-1/2','2','40-45','3-7'],
   ['2','3','40-45','4-9']
  ],
- check='ESAB also lists preheat O2 at 3-5 psig (1/4 and 3/8-1/2), 4-7 psig (3/4), 4-12 psig (1-1/2) and 5-14 psig (2). These are separate manufacturer torch values, not a third regulator on every torch.',
+ check='Separate PREHEAT-oxygen pressure values in Victor charts are for compatible three-hose torch setups. With a two-hose cutting torch, preheat oxygen shares the cutting-oxygen regulator supply. Do not try to dial in a separate preheat value on a two-hose torch.',
  source='[16] ESAB/Victor, Type 101 acetylene cutting tips, Operating Specifications. Selected rows reflect listed tip/part variants; consult the exact marked tip and the full source.'
 )
 P[48]['body'] = [
