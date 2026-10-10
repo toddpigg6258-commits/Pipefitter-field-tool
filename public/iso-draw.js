@@ -380,6 +380,51 @@ function isoGridMoveSplitFitting(symbol,point) {
   symbol.x=next.x;symbol.y=next.y;symbol.pipePoint={x:next.x,y:next.y};
   return true;
 }
+
+function isoGridSegmentInches(section) {
+  if(section.measure?.trim()){try{const n=literal(section.measure.trim());if(n>0)return n;}catch{}}
+  return section.autoMeasureInches>0?section.autoMeasureInches:isoGridSegmentLength(section);
+}
+function isoGridOletSegment(symbol) {
+  if(symbol?.type!=='OLET'||!symbol.attachedSegmentId)return null;
+  return isoGridCurrent().segments.find(s=>s.segmentId===symbol.attachedSegmentId)||null;
+}
+function isoGridSyncOlets(){
+  isoGridCurrent().symbols.forEach(symbol=>{
+    const s=isoGridOletSegment(symbol);if(!s)return;
+    if(symbol.ccMeasure?.trim()){try{const n=literal(symbol.ccMeasure.trim());const length=isoGridSegmentInches(s);if(n>=0&&length>0)symbol.positionFraction=Math.max(0,Math.min(1,n/length));}catch{}}
+    const t=Math.max(0,Math.min(1,Number(symbol.positionFraction)||0));
+    symbol.x=s.a.x+(s.b.x-s.a.x)*t;symbol.y=s.a.y+(s.b.y-s.a.y)*t;
+    const a=isoGridToViewPoint(s.a),b=isoGridToViewPoint(s.b);
+    symbol.rotation=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI+(symbol.rotationTrim||0);
+  });
+}
+function isoGridAttachOlet(index,point){
+  const drawing=isoGridCurrent(),s=drawing.segments[index],p=s&&isoGridProjectOnSegment(s,point);
+  if(!p)return false;
+  drawing.symbols.push({x:p.x,y:p.y,type:'OLET',snapped:true,auto:false,
+    attachedSegmentId:isoGridSegmentId(s),positionFraction:p.t,ccMeasure:'',rotationTrim:0});
+  isoGridSelectedSymbol=drawing.symbols.length-1;isoGridSelectedSegment=-1;
+  isoGridSyncOlets();return true;
+}
+function isoGridOletCToC(symbol){
+  const s=isoGridOletSegment(symbol);
+  return s?(symbol.ccMeasure?.trim()||fmtFeet(isoGridSegmentInches(s)*(symbol.positionFraction||0))):'';
+}
+function isoGridOletDimensionMarkup(symbol,index){
+  const s=isoGridOletSegment(symbol);if(!s)return '';
+  const a=isoGridToViewPoint(s.a),p=isoGridToViewPoint(symbol),b=isoGridToViewPoint(s.b);
+  const len=Math.hypot(b.x-a.x,b.y-a.y)||1,nx=-(b.y-a.y)/len,ny=(b.x-a.x)/len,off=37;
+  const x1=a.x+nx*off,y1=a.y+ny*off,x2=p.x+nx*off,y2=p.y+ny*off,mx=(x1+x2)/2,my=(y1+y2)/2;
+  return '<g data-grid-olet="'+index+'" class="iso-olet-measure"><line x1="'+a.x+'" y1="'+a.y+'" x2="'+x1+'" y2="'+y1+'" class="iso-tap-witness"/><line x1="'+p.x+'" y1="'+p.y+'" x2="'+x2+'" y2="'+y2+'" class="iso-tap-witness"/><line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" class="iso-tap-dim"/><rect x="'+(mx-48)+'" y="'+(my-11)+'" width="96" height="21" rx="4" class="iso-tap-dim-bg"/><text x="'+mx+'" y="'+(my+3)+'" text-anchor="middle" class="iso-tap-dim-text">'+isoGridEsc('C-C '+isoGridOletCToC(symbol))+'</text></g>';
+}
+function isoGridQuickEditOletCC(){
+  const symbol=isoGridCurrent().symbols[isoGridSelectedSymbol];
+  if(symbol?.type!=='OLET'||!isoGridOletSegment(symbol))return;
+  isoGridUpdateEditor();
+  isoGridSetStatus('Enter C-C from the pipe section start to O-let center, then SAVE SECTION INFO.');
+  if(typeof openMeasurePad==='function')openMeasurePad('isoGridMeasure','O-let C-C from section start');
+}
 function isoGridReturnToLineMode() {
   isoGridMode = 'LINE';
   document.querySelectorAll('[data-iso-stamp]').forEach(item => item.classList.toggle('on', item.dataset.isoStamp === 'LINE'));
@@ -408,8 +453,15 @@ function isoGridPlaceModeOnSegment(index, event) {
     isoGridRender();
     return true;
   }
-  const rotation = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x) * 180 / Math.PI;
-  drawing.symbols.push({ ...point, type, rotation, snapped: true, auto: false });
+  if(type==='OLET'){
+    if(!isoGridAttachOlet(index,point))return false;
+    isoGridReturnToLineMode();
+    isoGridSetStatus('O-let attached on continuous pipe. C-C from start of section.');
+    isoGridRender();return true;
+  }
+  const a=isoGridToViewPoint(segment.a),b=isoGridToViewPoint(segment.b);
+  const rotation=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+  drawing.symbols.push({...isoGridProjectOnSegment(segment,point),type,rotation,snapped:true,auto:false});
   isoGridSelectedSymbol = drawing.symbols.length - 1;
   isoGridSelectedSegment = -1;
   isoGridReturnToLineMode();
@@ -747,11 +799,19 @@ function isoGridSplitSegmentAt(index, point, type) {
   const undoSegment = { ...segment, a: { ...segment.a }, b: { ...segment.b } };
   const undoLastPoint = isoGridLastPoint ? { ...isoGridLastPoint } : null;
   const autoTotal = segment.autoMeasureInches > 0 ? segment.autoMeasureInches : isoGridSegmentLength(segment);
+  const segmentId=isoGridSegmentId(segment);
   const first = { ...segment, b: { ...split }, measure: firstMeasure, autoMeasureInches: autoTotal * firstLength / totalLength, endFitType: type };
   const second = { ...segment, segmentId: null, a: { ...split }, measure: secondMeasure, autoMeasureInches: autoTotal * secondLength / totalLength, note: '', legId: null, startFitType: type };
-  isoGridSegmentId(segment);
-  first.segmentId=segment.segmentId;
+  first.segmentId=segmentId;
   isoGridSegmentId(second);
+  drawing.symbols.forEach(symbol=>{
+    if(symbol.type!=='OLET'||symbol.attachedSegmentId!==segmentId)return;
+    const t=Math.max(0,Math.min(1,Number(symbol.positionFraction)||0));
+    const splitT=firstLength/totalLength;
+    if(t>splitT){symbol.attachedSegmentId=second.segmentId;symbol.positionFraction=(t-splitT)/(1-splitT);}
+    else symbol.positionFraction=t/splitT;
+    symbol.ccMeasure='';
+  });
   drawing.segments.splice(index, 1, first, second);
   const rotation = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x) * 180 / Math.PI;
    drawing.symbols.push({ ...split, type, rotation, runVector:{x:segment.b.x-segment.a.x,y:segment.b.y-segment.a.y}, rotationTrim:0, snapped: true, auto: false, splitNode: true, pipePoint: { ...split }, manualTotal: isFinite(manualTotal) && manualTotal >= 0 ? manualTotal : null, splitUndo: { index, segment: undoSegment, lastPoint: undoLastPoint } });
@@ -931,6 +991,15 @@ function isoGridUpdateEditor() {
     if (note) note.value = segment.note || '';
     return;
   }
+  if(symbol?.type==='OLET'&&isoGridOletSegment(symbol)){
+    if(info)info.innerHTML='<b>O-let</b> • C-C from start of the continuous pipe section. Enter C-C then SAVE SECTION INFO.';
+    if(dimensionType)dimensionType.value='C-C';
+    if(measure)measure.value=isoGridOletCToC(symbol);
+    if(riseMeasure)riseMeasure.value='';
+    if(runMeasure)runMeasure.value='';
+    if(note)note.value='';
+    return;
+  }
   if (symbol) {
     if (info) info.innerHTML = `<b>Selected fitting:</b> ${isoGridEsc(isoGridSymbolName(symbol.type))} • ${isoGridSymbolRotationLabel(symbol)}`;
     if (dimensionType) dimensionType.value = 'C-C';
@@ -990,7 +1059,7 @@ function isoGridUpdateQuickBar() {
     if (hint) hint.textContent = 'Rotate changes only the tee bullhead / branch. The straight-through run stays aligned with the pipe.';
     snapButton?.classList.remove('hidden');
   } else {
-    if (hint) hint.textContent = 'Drag it on the grid or rotate it here. Moving a fitting never moves the pipe.';
+    if(hint)hint.textContent=symbol.type==='OLET'?'O-let on continuous pipe. Edit C-C in Selected Fitting and SAVE SECTION INFO.':symbol.splitNode?'Drag along the pipe to move this fitting junction, or edit the adjoining C-C sections.':'Drag to move; a preview shows the position beside your finger.';
     snapButton?.classList.remove('hidden');
   }
 }
@@ -1115,6 +1184,7 @@ function isoGridRender() {
   svg.style.width = `${width}px`;
   svg.style.height = `${height}px`;
   const drawing = isoGridCurrent();
+  isoGridSyncOlets();
   const occupiedDimensionLabels = [];
     let markup = '<defs><marker id="isoDimArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#1e3a8a"/></marker></defs>';
     if (isoGridView === 'ISO' && isoGridVisible) {
@@ -1244,7 +1314,10 @@ function isoGridRender() {
       markup += `<circle cx="${a.x}" cy="${a.y}" r="14" class="iso-end-handle" data-grid-end="a" data-grid-segment="${index}"/><circle cx="${b.x}" cy="${b.y}" r="14" class="iso-end-handle" data-grid-end="b" data-grid-segment="${index}"/>`; 
     }
   });
-  drawing.symbols.forEach((symbol, index) => { markup += isoGridSymbolMarkup(symbol, index); });
+  drawing.symbols.forEach((symbol,index)=>{
+    if(symbol.type==='OLET'&&isoGridMeasurementMode!=='OFF')markup+=isoGridOletDimensionMarkup(symbol,index);
+    markup+=isoGridSymbolMarkup(symbol,index);
+  });
   if (isoGridLastPoint) {
     const currentViewPoint = isoGridLastPoint?.isoDisplayPoint && isoGridView === 'ISO' ? isoGridLastPoint.isoDisplayPoint : isoGridToViewPoint(isoGridLastPoint);
     markup += `<circle cx="${currentViewPoint.x}" cy="${currentViewPoint.y}" r="8" class="iso-tap-current"/>`;
@@ -1405,6 +1478,13 @@ function isoGridRender() {
       isoGridSelectSegment(index);
     });
   });
+  svg.querySelectorAll('[data-grid-olet]').forEach(element=>{
+    element.addEventListener('click',event=>{
+      event.preventDefault();event.stopPropagation();
+      isoGridSelectSymbol(+element.dataset.gridOlet);
+      setTimeout(isoGridQuickEditOletCC,0);
+    });
+  });
   svg.querySelectorAll('[data-grid-symbol]').forEach(element => {
     element.addEventListener('click', event => {
       event.stopPropagation();
@@ -1534,7 +1614,7 @@ function isoGridTap(event, bypassTapGuard = false) {
       if (rawDisplay && Math.min(Math.hypot(rawDisplay.x - aDisplay.x, rawDisplay.y - aDisplay.y), Math.hypot(rawDisplay.x - bDisplay.x, rawDisplay.y - bDisplay.y)) > 14) return;
     } else return;
   }
-  let point = isoGridEventPoint(event, true, true);
+  let point = isoGridEventPoint(event,isoGridMode==='LINE',isoGridMode==='LINE');
   if (!point) return;
   const drawing = isoGridCurrent();
   if (isoGridMode !== 'LINE') {
@@ -1552,7 +1632,7 @@ function isoGridTap(event, bypassTapGuard = false) {
       isoGridSetStatus('END FLANGE: tap the end point of a pipe run. It installs as one flange line and does not split the pipe.');
       return;
     }
-    if (isoGridBreaksPipe(isoGridMode)) {
+    if (isoGridBreaksPipe(isoGridMode)||isoGridMode==='OLET') {
       const nearest = isoGridNearestSegment(point);
       if (nearest && isoGridIsFlange(isoGridMode)) {
         const segment = drawing.segments[nearest.index];
@@ -1563,7 +1643,12 @@ function isoGridTap(event, bypassTapGuard = false) {
           return;
         }
       }
-      if (nearest && isoGridSplitSegmentAt(nearest.index, nearest.point, isoGridMode)) {
+      if(nearest&&isoGridMode==='OLET'&&isoGridAttachOlet(nearest.index,nearest.point)){
+        isoGridReturnToLineMode();
+        isoGridSetStatus('O-let installed on continuous pipe with C-C from section start.');
+        isoGridRender();return;
+      }
+      if(nearest&&isoGridBreaksPipe(isoGridMode)&&isoGridSplitSegmentAt(nearest.index,nearest.point,isoGridMode)){
         const installedType = isoGridMode;
         isoGridReturnToLineMode();
         isoGridSetStatus(`${isoGridSymbolName(installedType)} installed in the run. The pipe is now two measured sections / Spool Legs. PIPE LINE mode is active again.`);
@@ -1571,7 +1656,9 @@ function isoGridTap(event, bypassTapGuard = false) {
         return;
       }
     }
-    if(isoGridBreaksPipe(isoGridMode)){isoGridSetStatus('Tap on a pipe long enough to split for the selected fitting.');return;}
+    if(isoGridBreaksPipe(isoGridMode)||isoGridMode==='OLET'){
+      isoGridSetStatus('Tap an existing pipe to install. O-lets never split pipe.');return;
+    }
     const placedType = isoGridMode;
     const placedPoint = point;
     drawing.symbols.push({ ...placedPoint, type: placedType, rotation: 0, snapped: true, auto: false });
@@ -1635,7 +1722,8 @@ function isoGridSelectSymbol(index) {
   isoGridSelectedSymbol = index;
   isoGridSelectedSegment = -1;
   const symbol = drawing.symbols[index];
-  if (isoGridIsTee(symbol.type)) isoGridSetStatus(`${isoGridSymbolName(symbol.type)} selected. Rotate controls move only the bullhead / branch; the straight-through run stays with the pipe.`);
+  if(symbol.type==='OLET'&&isoGridOletSegment(symbol))isoGridSetStatus('O-let selected on continuous pipe. Tap its C-C to edit location.');
+  else if (isoGridIsTee(symbol.type)) isoGridSetStatus(`${isoGridSymbolName(symbol.type)} selected. Rotate controls move only the bullhead / branch; the straight-through run stays with the pipe.`);
   else isoGridSetStatus(`${isoGridSymbolName(symbol.type)} selected. Drag it to another grid point without changing the pipe, or rotate it ±15° / 90°.`);
   isoGridRender();
 }
@@ -1792,6 +1880,18 @@ function isoGridReflowMeasuredRun(selectedIndex) {
 }
 
 function isoGridSaveSegmentInfo() {
+  const selected=isoGridCurrent().symbols[isoGridSelectedSymbol];
+  if(selected?.type==='OLET'&&isoGridOletSegment(selected)){
+    const s=isoGridOletSegment(selected),entered=$('isoGridMeasure')?.value.trim()||'';
+    let n;try{n=literal(entered);}catch{n=NaN;}
+    const length=isoGridSegmentInches(s);
+    if(!(n>=0)||!(length>0)||n>length){
+      isoGridSetStatus('O-let C-C must be between 0 and this pipe section C-C length.');return;
+    }
+    selected.ccMeasure=entered;selected.positionFraction=n/length;
+    isoGridSyncOlets();isoGridSetStatus('O-let moved to its measured C-C. Pipe remains continuous.');
+    isoGridRender();return;
+  }
   const segment = isoGridCurrent().segments[isoGridSelectedSegment];
   if (!segment) {
     isoGridSetStatus('Select a pipe section first.');
@@ -1804,6 +1904,7 @@ function isoGridSaveSegmentInfo() {
   segment.note = $('isoGridNote') ? $('isoGridNote').value.trim() : '';
   const offsetMath = isoGridApplyOffsetGeometry(segment);
   const runReflowed = !offsetMath && isoGridReflowMeasuredRun(isoGridSelectedSegment);
+  isoGridSyncOlets();
   isoGridSyncSpoolLegs();
   isoGridSetStatus(offsetMath ? `OFFSET ${offsetMath.angle.toFixed(1)}° calculated from RISE ${segment.riseMeasure} and RUN ${segment.runMeasure}. Travel is ${fmtFeet(offsetMath.travel)} and its drawn length is kept proportional to other measured pipe while remaining on the in-between ISO plane.` : runReflowed ? `Section S${isoGridSelectedSegment + 1} saved. Tee location(s) on this straight run were repositioned to match the entered pipe measurements proportionally.` : `Section S${isoGridSelectedSegment + 1} saved. Travel: ${segment.dimensionType} ${isoGridSegmentMeasure(segment)}${segment.riseMeasure ? ` • RISE ${segment.riseMeasure}` : ''}${segment.runMeasure ? ` • RUN ${segment.runMeasure}` : ''}.`);
   isoGridRender();
@@ -1854,6 +1955,11 @@ function isoGridAddFittingToSelected(type) {
     return;
   }
   if(isoGridBreaksPipe(type)){isoGridSetStatus('Select a longer section; this one is too short for a fitting split.');return;}
+  if(type==='OLET'){
+    isoGridAttachOlet(isoGridSelectedSegment,placedPoint);
+    isoGridSetStatus('O-let attached without a pipe break. Tap its C-C label to edit.');
+    isoGridRender();return;
+  }
   const rotation = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x) * 180 / Math.PI;
   drawing.symbols.push({ x, y, type, rotation, snapped: false, auto: false });
   isoGridSelectedSymbol = drawing.symbols.length - 1;
@@ -1872,7 +1978,7 @@ function isoGridRotateSelected(delta) {
     symbol.branchRotation = ((symbol.branchRotation || 0) + delta) % 360;
     isoGridSetStatus(`${isoGridSymbolName(symbol.type)} bullhead rotated to ${symbol.branchRotation.toFixed(0)}°. The straight-through run stayed aligned with the pipe.`);
   } else {
-    if(symbol.splitNode)symbol.rotationTrim=((symbol.rotationTrim||0)+delta)%360;
+    if(symbol.splitNode||symbol.type==='OLET')symbol.rotationTrim=((symbol.rotationTrim||0)+delta)%360;
     else symbol.rotation=((symbol.rotation||0)+delta)%360;
     if (symbol.type === 'NORTH_ARROW') {
       isoGridSyncSpoolLegs();
@@ -1889,6 +1995,12 @@ function isoGridSnapSelectedSymbol() {
   if (!symbol) {
     isoGridSetStatus('Select a fitting symbol first.');
     return;
+  }
+  if(symbol.type==='OLET'&&isoGridOletSegment(symbol)){
+    isoGridSyncOlets();isoGridSetStatus('O-let is attached to the pipe. Edit its C-C to move it.');isoGridRender();return;
+  }
+  if(symbol.splitNode){
+    isoGridSetStatus('Inline fitting is attached to the pipe junction. Drag along the run or edit C-C.');return;
   }
   const node = isoGridNearestNode(symbol, Infinity);
   if (!node) {
