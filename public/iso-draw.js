@@ -358,7 +358,18 @@ function isoGridVisiblePipeEnd(p,other,type){
 }
 function isoGridInlineRotation(symbol) {
   if(!symbol.runVector)return symbol.rotation||0;
-  const a=isoGridToViewPoint(symbol),b=isoGridToViewPoint({x:symbol.x+symbol.runVector.x,y:symbol.y+symbol.runVector.y});
+  const center=symbol.pipePoint||symbol;
+  const candidates=isoGridCurrent().segments.filter(seg=>
+    Math.hypot(seg.a.x-center.x,seg.a.y-center.y)<.01 ||
+    Math.hypot(seg.b.x-center.x,seg.b.y-center.y)<.01);
+  const dot=seg=>{
+    const dx=seg.b.x-seg.a.x,dy=seg.b.y-seg.a.y;
+    return (dx*symbol.runVector.x+dy*symbol.runVector.y)/((Math.hypot(dx,dy)||1)*(Math.hypot(symbol.runVector.x,symbol.runVector.y)||1));
+  };
+  candidates.sort((a,b)=>dot(b)-dot(a));
+  const chosen=candidates[0];
+  const a=chosen?isoGridToViewPoint(chosen.a):isoGridToViewPoint(symbol);
+  const b=chosen?isoGridToViewPoint(chosen.b):isoGridToViewPoint({x:symbol.x+symbol.runVector.x,y:symbol.y+symbol.runVector.y});
   return Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI+(symbol.rotationTrim||0);
 }
 function isoGridMoveSplitFitting(symbol,point) {
@@ -1032,12 +1043,14 @@ function isoGridUpdateQuickBar() {
   const riseButton = $('isoQuickRiseButton');
   const runButton = $('isoQuickRunButton');
   const snapButton = $('isoQuickSnapButton');
+  const oletButton = $('isoQuickOletCC');
   if (!segment && !symbol) {
     bar.classList.add('hidden');
     return;
   }
   bar.classList.remove('hidden');
   if (segment) {
+    oletButton?.classList.add('hidden');
     pipeControls?.classList.remove('hidden');
     fittingControls?.classList.add('hidden');
     if (title) title.textContent = `PIPE S${isoGridSelectedSegment + 1} • ${segment.dimensionType || 'C-C'}`;
@@ -1051,6 +1064,7 @@ function isoGridUpdateQuickBar() {
   }
   pipeControls?.classList.add('hidden');
   fittingControls?.classList.remove('hidden');
+  oletButton?.classList.toggle('hidden', symbol.type!=='OLET'||!isoGridOletSegment(symbol));
   if (title) title.textContent = `${isoGridSymbolName(symbol.type)} • ${isoGridSymbolRotationLabel(symbol)}`;
   if (symbol.type === 'NORTH_ARROW') {
     if (hint) hint.textContent = 'Drag the north arrow to position it, then rotate it to match job north.';
@@ -1722,7 +1736,7 @@ function isoGridSelectSymbol(index) {
   isoGridSelectedSymbol = index;
   isoGridSelectedSegment = -1;
   const symbol = drawing.symbols[index];
-  if(symbol.type==='OLET'&&isoGridOletSegment(symbol))isoGridSetStatus('O-let selected on continuous pipe. Tap its C-C to edit location.');
+  if(symbol.type==='OLET'&&isoGridOletSegment(symbol))isoGridSetStatus('O-let selected on continuous pipe. Tap EDIT O-LET C-C to adjust its location.');
   else if (isoGridIsTee(symbol.type)) isoGridSetStatus(`${isoGridSymbolName(symbol.type)} selected. Rotate controls move only the bullhead / branch; the straight-through run stays with the pipe.`);
   else isoGridSetStatus(`${isoGridSymbolName(symbol.type)} selected. Drag it to another grid point without changing the pipe, or rotate it ±15° / 90°.`);
   isoGridRender();
