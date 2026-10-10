@@ -15,6 +15,8 @@ let isoGridPinchSuppressUntil = 0;
 let isoGridPanActive = false;
 let isoGridEndpointDragging = false;
 let isoGridPanSuppressUntil = 0;
+let isoGridFittingDragActive = false;
+let isoGridSegmentSerial = 0;
 let isoGridMeasurementDragUntil = 0;
 let isoGridState = {
   SHARED: { segments: [], symbols: [] },
@@ -333,6 +335,51 @@ function isoGridSnapPointToSegmentGrid(segment, point, interior = false, forceGr
   };
 }
 
+
+function isoGridSegmentId(s) {
+  if(!s.segmentId)s.segmentId='pf-'+Date.now().toString(36)+'-'+(++isoGridSegmentSerial);
+  return s.segmentId;
+}
+function isoGridProjectOnSegment(s,p,margin=0) {
+  const dx=s.b.x-s.a.x,dy=s.b.y-s.a.y,d=dx*dx+dy*dy,len=Math.sqrt(d);
+  if(!len||len<margin*2)return null;
+  const m=margin?Math.min(.42,margin/len):0;
+  const raw=((p.x-s.a.x)*dx+(p.y-s.a.y)*dy)/d;
+  const t=Math.max(m,Math.min(1-m,raw));
+  return {x:s.a.x+t*dx,y:s.a.y+t*dy,t};
+}
+function isoGridIsInlineBreak(type){return isoGridBreaksPipe(type)&&!isoGridIsTee(type);}
+function isoGridVisiblePipeEnd(p,other,type){
+  if(!isoGridIsInlineBreak(type))return p;
+  const len=Math.hypot(other.x-p.x,other.y-p.y);
+  if(!len)return p;
+  const inset=Math.min(.42*len,isoGridIsFlange(type)?8:14);
+  return {x:p.x+(other.x-p.x)*inset/len,y:p.y+(other.y-p.y)*inset/len};
+}
+function isoGridInlineRotation(symbol) {
+  if(!symbol.runVector)return symbol.rotation||0;
+  const a=isoGridToViewPoint(symbol),b=isoGridToViewPoint({x:symbol.x+symbol.runVector.x,y:symbol.y+symbol.runVector.y});
+  return Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI+(symbol.rotationTrim||0);
+}
+function isoGridMoveSplitFitting(symbol,point) {
+  const old=symbol.pipePoint||symbol,ds=isoGridCurrent().segments;
+  const near=p=>Math.hypot(p.x-old.x,p.y-old.y)<.01;
+  const touching=ds.filter(s=>near(s.a)||near(s.b));
+  let best=null;
+  for(let i=0;i<touching.length;i++)for(let j=i+1;j<touching.length;j++){
+    const a=near(touching[i].a)?touching[i].b:touching[i].a;
+    const b=near(touching[j].a)?touching[j].b:touching[j].a;
+    const u={x:a.x-old.x,y:a.y-old.y},v={x:b.x-old.x,y:b.y-old.y};
+    const dot=(u.x*v.x+u.y*v.y)/((Math.hypot(u.x,u.y)||1)*(Math.hypot(v.x,v.y)||1));
+    if(dot<-.94&&(!best||dot<best.dot))best={a,b,dot};
+  }
+  if(!best)return false;
+  const next=isoGridProjectOnSegment({a:best.a,b:best.b},point,7);
+  if(!next)return false;
+  isoGridMoveSharedNode(old,next);
+  symbol.x=next.x;symbol.y=next.y;symbol.pipePoint={x:next.x,y:next.y};
+  return true;
+}
 function isoGridReturnToLineMode() {
   isoGridMode = 'LINE';
   document.querySelectorAll('[data-iso-stamp]').forEach(item => item.classList.toggle('on', item.dataset.isoStamp === 'LINE'));
@@ -345,7 +392,7 @@ function isoGridPlaceModeOnSegment(index, event) {
   const type = isoGridMode;
   const rawPoint = isoGridEventPoint(event, false);
   if (!rawPoint) return false;
-  const point = isoGridSnapPointToSegmentGrid(segment, rawPoint, isoGridBreaksPipe(type), isoGridIsTee(type));
+  const point = isoGridBreaksPipe(type) || type === 'OLET' ? rawPoint : isoGridSnapPointToSegmentGrid(segment, rawPoint, false, false);
   if (isoGridIsFlange(type)) {
     const nearA = Math.hypot(point.x - segment.a.x, point.y - segment.a.y) < 8;
     const nearB = Math.hypot(point.x - segment.b.x, point.y - segment.b.y) < 8;
@@ -558,7 +605,7 @@ function isoGridSegmentLabel(segment) {
   return type + ' ' + isoGridSegmentMeasure(segment);
 }
 
-const ISO_GRID_BREAK_FITTINGS = ['TEE', 'TEE_UP', 'TEE_DOWN', 'UNION', 'FLANGE', 'WN_FLANGE', 'SO_FLANGE', 'SW_FLANGE', 'BLIND_FLANGE', 'GATE', 'GLOBE', 'PLUG', 'BALL', 'CHECK', 'BUTTERFLY', 'NEEDLE', 'STRAINER'];
+const ISO_GRID_BREAK_FITTINGS = ['TEE', 'TEE_UP', 'TEE_DOWN', 'CONC_REDUCER', 'ECC_REDUCER', 'UNION', 'FLANGE', 'WN_FLANGE', 'SO_FLANGE', 'SW_FLANGE', 'BLIND_FLANGE', 'GATE', 'GLOBE', 'PLUG', 'BALL', 'CHECK', 'BUTTERFLY', 'NEEDLE', 'STRAINER'];
 
 function isoGridBreaksPipe(type) {
   return ISO_GRID_BREAK_FITTINGS.includes(type);
@@ -683,20 +730,9 @@ function isoGridSplitSegmentAt(index, point, type) {
   // Tees must split even the very first/shortest pipe leg. ISO diagonal
   // screen coordinates often have a GCD of 1, so grid-step splitting fails.
   // Project a tee onto the pipe itself and keep it clear of both endpoints.
-  let split;
-  if (isoGridIsTee(type)) {
-    const dx = segment.b.x - segment.a.x;
-    const dy = segment.b.y - segment.a.y;
-    const lengthSquared = dx * dx + dy * dy;
-    const length = Math.sqrt(lengthSquared);
-    if (length < 14) return false;
-    const projected = ((point.x - segment.a.x) * dx + (point.y - segment.a.y) * dy) / lengthSquared;
-    const margin = Math.min(0.42, 7 / length);
-    const t = Math.max(margin, Math.min(1 - margin, projected));
-    split = { x: segment.a.x + t * dx, y: segment.a.y + t * dy };
-  } else {
-    split = isoGridSnapPointToSegmentGrid(segment, point, true, false);
-  }
+  const projected=isoGridProjectOnSegment(segment,point,7);
+  if(!projected)return false;
+  const split={x:projected.x,y:projected.y};
   if (Math.hypot(split.x - segment.a.x, split.y - segment.a.y) < 6 || Math.hypot(split.x - segment.b.x, split.y - segment.b.y) < 6) return false;
   const firstLength = Math.hypot(split.x - segment.a.x, split.y - segment.a.y);
   const secondLength = Math.hypot(segment.b.x - split.x, segment.b.y - split.y);
@@ -712,10 +748,13 @@ function isoGridSplitSegmentAt(index, point, type) {
   const undoLastPoint = isoGridLastPoint ? { ...isoGridLastPoint } : null;
   const autoTotal = segment.autoMeasureInches > 0 ? segment.autoMeasureInches : isoGridSegmentLength(segment);
   const first = { ...segment, b: { ...split }, measure: firstMeasure, autoMeasureInches: autoTotal * firstLength / totalLength, endFitType: type };
-  const second = { ...segment, a: { ...split }, measure: secondMeasure, autoMeasureInches: autoTotal * secondLength / totalLength, note: '', legId: null, startFitType: type };
+  const second = { ...segment, segmentId: null, a: { ...split }, measure: secondMeasure, autoMeasureInches: autoTotal * secondLength / totalLength, note: '', legId: null, startFitType: type };
+  isoGridSegmentId(segment);
+  first.segmentId=segment.segmentId;
+  isoGridSegmentId(second);
   drawing.segments.splice(index, 1, first, second);
   const rotation = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x) * 180 / Math.PI;
-  drawing.symbols.push({ ...split, type, rotation, snapped: true, auto: false, splitNode: true, pipePoint: { ...split }, manualTotal: isFinite(manualTotal) && manualTotal >= 0 ? manualTotal : null, splitUndo: { index, segment: undoSegment, lastPoint: undoLastPoint } });
+   drawing.symbols.push({ ...split, type, rotation, runVector:{x:segment.b.x-segment.a.x,y:segment.b.y-segment.a.y}, rotationTrim:0, snapped: true, auto: false, splitNode: true, pipePoint: { ...split }, manualTotal: isFinite(manualTotal) && manualTotal >= 0 ? manualTotal : null, splitUndo: { index, segment: undoSegment, lastPoint: undoLastPoint } });
   isoGridSelectedSymbol = drawing.symbols.length - 1;
   isoGridSelectedSegment = -1;
   isoGridSyncSpoolLegs();
@@ -808,7 +847,7 @@ function isoGridSymbolMarkup(symbol, index) {
   const y = viewPoint.y;
   const type = symbol.type;
   const rotation = isFinite(symbol.rotation) ? symbol.rotation : 0;
-  const displayRotation = isoGridIsTee(type) ? isoGridTeeRunRotation(symbol) : rotation;
+  const displayRotation = isoGridIsTee(type) ? isoGridTeeRunRotation(symbol) : symbol.splitNode ? isoGridInlineRotation(symbol) : rotation;
   const branchRotation = isoGridIsTee(type) ? isoGridTeeBranchRotation(symbol) : 0;
   const selected = index === isoGridSelectedSymbol;
   const base = 'fill="white" stroke="#111827" stroke-width="2.2" vector-effect="non-scaling-stroke"';
@@ -1198,7 +1237,9 @@ function isoGridRender() {
         riseMarkup = segment.riseMeasure ? isoGridDimensionMarkup(index, 'rise', corner, b, riseA, riseB, riseLabelOffset, segment.riseMeasure, measurementScale) : '';
       }
     }
-    markup += `<g data-grid-segment="${index}" class="iso-grid-segment"><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="${pipeClass}"/><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-hit"/><circle cx="${a.x}" cy="${a.y}" r="7" class="iso-tap-node iso-end-touch" data-grid-end="a" data-grid-segment="${index}"/><circle cx="${b.x}" cy="${b.y}" r="7" class="iso-tap-node iso-end-touch" data-grid-end="b" data-grid-segment="${index}"/>${dimensionMarkup}${offsetGuideMarkup}${riseMarkup}${runMarkup}${segment.note ? `<text x="${(a.x + b.x) / 2}" y="${(a.y + b.y) / 2 + 18}" class="iso-tap-note">${isoGridEsc(segment.note)}</text>` : ''}</g>`;
+    const drawA=isoGridVisiblePipeEnd(a,b,segment.startFitType);
+    const drawB=isoGridVisiblePipeEnd(b,a,segment.endFitType);
+    markup += `<g data-grid-segment="${index}" class="iso-grid-segment"><line x1="${drawA.x}" y1="${drawA.y}" x2="${drawB.x}" y2="${drawB.y}" class="${pipeClass}"/><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-hit"/><circle cx="${a.x}" cy="${a.y}" r="7" class="iso-tap-node iso-end-touch" data-grid-end="a" data-grid-segment="${index}"/><circle cx="${b.x}" cy="${b.y}" r="7" class="iso-tap-node iso-end-touch" data-grid-end="b" data-grid-segment="${index}"/>${dimensionMarkup}${offsetGuideMarkup}${riseMarkup}${runMarkup}${segment.note ? `<text x="${(a.x + b.x) / 2}" y="${(a.y + b.y) / 2 + 18}" class="iso-tap-note">${isoGridEsc(segment.note)}</text>` : ''}</g>`;
     if (index === isoGridSelectedSegment) {
       markup += `<circle cx="${a.x}" cy="${a.y}" r="14" class="iso-end-handle" data-grid-end="a" data-grid-segment="${index}"/><circle cx="${b.x}" cy="${b.y}" r="14" class="iso-end-handle" data-grid-end="b" data-grid-segment="${index}"/>`; 
     }
@@ -1530,6 +1571,7 @@ function isoGridTap(event, bypassTapGuard = false) {
         return;
       }
     }
+    if(isoGridBreaksPipe(isoGridMode)){isoGridSetStatus('Tap on a pipe long enough to split for the selected fitting.');return;}
     const placedType = isoGridMode;
     const placedPoint = point;
     drawing.symbols.push({ ...placedPoint, type: placedType, rotation: 0, snapped: true, auto: false });
@@ -1803,7 +1845,7 @@ function isoGridAddFittingToSelected(type) {
     return;
   }
   const midpoint = { x: (segment.a.x + segment.b.x) / 2, y: (segment.a.y + segment.b.y) / 2 };
-  const placedPoint = isoGridSnapPointToSegmentGrid(segment, midpoint, isoGridBreaksPipe(type), isoGridIsTee(type));
+  const placedPoint = isoGridBreaksPipe(type) || type === 'OLET' ? midpoint : isoGridSnapPointToSegmentGrid(segment, midpoint, false, false);
   const x = placedPoint.x;
   const y = placedPoint.y;
   if (isoGridBreaksPipe(type) && isoGridSplitSegmentAt(isoGridSelectedSegment, placedPoint, type)) {
@@ -1811,6 +1853,7 @@ function isoGridAddFittingToSelected(type) {
     isoGridRender();
     return;
   }
+  if(isoGridBreaksPipe(type)){isoGridSetStatus('Select a longer section; this one is too short for a fitting split.');return;}
   const rotation = Math.atan2(segment.b.y - segment.a.y, segment.b.x - segment.a.x) * 180 / Math.PI;
   drawing.symbols.push({ x, y, type, rotation, snapped: false, auto: false });
   isoGridSelectedSymbol = drawing.symbols.length - 1;
@@ -1829,7 +1872,8 @@ function isoGridRotateSelected(delta) {
     symbol.branchRotation = ((symbol.branchRotation || 0) + delta) % 360;
     isoGridSetStatus(`${isoGridSymbolName(symbol.type)} bullhead rotated to ${symbol.branchRotation.toFixed(0)}°. The straight-through run stayed aligned with the pipe.`);
   } else {
-    symbol.rotation = ((symbol.rotation || 0) + delta) % 360;
+    if(symbol.splitNode)symbol.rotationTrim=((symbol.rotationTrim||0)+delta)%360;
+    else symbol.rotation=((symbol.rotation||0)+delta)%360;
     if (symbol.type === 'NORTH_ARROW') {
       isoGridSyncSpoolLegs();
       isoGridSetStatus(`Job north rotated to ${symbol.rotation.toFixed(0)}°. Section compass directions updated automatically.`);
