@@ -1136,6 +1136,7 @@ function isoGridResetMeasurementLayout() {
   segment.measureLane = null;
   segment.riseLabelOffset = { x: 0, y: 0 };
   segment.runLabelOffset = { x: 0, y: 0 };
+  segment.offsetAngleLabelOffset = { x: 0, y: 0 };
   isoGridSetStatus(`Measurement layout for S${isoGridSelectedSegment + 1} reset. Drag a label to reposition it or use DIM − / DIM + to resize.`);
   isoGridRender();
 }
@@ -1314,7 +1315,10 @@ function isoGridRender() {
         hatches += `<line x1="${base.x}" y1="${base.y}" x2="${travel.x}" y2="${travel.y}" class="iso-offset-hatch"/>`;
       }
       const angleText = Number(offsetMath.angle.toFixed(1));
-      offsetGuideMarkup = `<g class="iso-offset-plane"><line x1="${a.x}" y1="${a.y}" x2="${corner.x}" y2="${corner.y}" class="iso-offset-guide" marker-end="url(#isoDimArrow)"/><line x1="${corner.x}" y1="${corner.y}" x2="${b.x}" y2="${b.y}" class="iso-offset-guide"/>${hatches}<text x="${(a.x + b.x) / 2}" y="${(a.y + b.y) / 2 - 16}" class="iso-offset-angle-text">${angleText}° OFFSET</text></g>`;
+      const angleX=(a.x+b.x)/2, angleY=(a.y+b.y)/2-16;
+      const angleOffset=segment.offsetAngleLabelOffset||{x:0,y:0};
+      offsetGuideMarkup = `<g class="iso-offset-plane"><line x1="${a.x}" y1="${a.y}" x2="${corner.x}" y2="${corner.y}" class="iso-offset-guide" marker-end="url(#isoDimArrow)"/><line x1="${corner.x}" y1="${corner.y}" x2="${b.x}" y2="${b.y}" class="iso-offset-guide"/>${hatches}</g>`;
+      offsetGuideMarkup += `<g data-dimension="angle" data-dimension-section="${index}"><g data-dimension-label data-grid-angle="${index}" class="iso-movable-measure" transform="translate(${angleOffset.x} ${angleOffset.y})"><rect x="${angleX-50}" y="${angleY-13}" width="100" height="24" rx="4" class="iso-tap-dim-bg"/><text x="${angleX}" y="${angleY+3}" class="iso-offset-angle-text" text-anchor="middle">${angleText}° OFFSET</text></g></g>`;
       if (showSegmentMeasurements) {
         const runNormal = { x: -basis.plan.vector.y, y: basis.plan.vector.x };
         const runShift = 24;
@@ -1422,7 +1426,7 @@ function isoGridRender() {
           } else {
             isoGridSelectedSegment = index;
             isoGridSelectedSymbol = -1;
-            isoGridSetStatus(`Pipe S${index + 1} ${offsetKey === 'riseLabelOffset' ? 'RISE' : offsetKey === 'runLabelOffset' ? 'RUN' : 'C-C'} measurement moved and saved at the released position.`);
+            isoGridSetStatus(`Pipe S${index + 1} ${offsetKey === 'riseLabelOffset' ? 'RISE' : offsetKey === 'runLabelOffset' ? 'RUN' : offsetKey === 'offsetAngleLabelOffset' ? 'OFFSET ANGLE' : 'C-C'} measurement moved and saved at the released position.`);
           }
           isoGridRender();
           endEvent.preventDefault();
@@ -1471,6 +1475,7 @@ function isoGridRender() {
   bindMeasurementDrag('[data-dimension-label][data-grid-rise]', 'gridRise', 'riseLabelOffset');
   bindMeasurementDrag('[data-dimension-label][data-grid-run]', 'gridRun', 'runLabelOffset');
   bindMeasurementDrag('[data-dimension-label][data-grid-olet]', 'gridOlet', 'oletLabelOffset');
+  bindMeasurementDrag('[data-dimension-label][data-grid-angle]', 'gridAngle', 'offsetAngleLabelOffset');
   svg.querySelectorAll('[data-grid-segment]').forEach(element => {
     if (element.classList.contains('iso-end-handle')) return;
     let branchTouchStart = null;
@@ -1563,7 +1568,7 @@ function isoGridRender() {
         if (!dragging) {
           dragging = true;
           cleanup();
-          isoGridStartEndpointDrag(event, segmentIndex, endpointKey);
+          isoGridStartEndpointDrag(event, segmentIndex, endpointKey, moveEvent);
         }
       };
       const up = upEvent => {
@@ -2209,7 +2214,31 @@ function isoGridEdgePanVelocity(position, start, size) {
   return 0;
 }
 
-function isoGridStartEndpointDrag(event, segmentIndex, endpointKey) {
+
+function isoGridPipeDragPreview(segment, endpointKey, event, segmentIndex) {
+  let preview=document.getElementById('isoPipeDragPreview');
+  if(!preview){
+    preview=document.createElement('div');
+    preview.id='isoPipeDragPreview';
+    preview.style.cssText='position:fixed;width:148px;min-height:133px;z-index:99999;pointer-events:none;background:#ffffffed;border:2px solid #d97706;border-radius:14px;box-shadow:0 5px 20px #11182755;padding:4px;text-align:center;color:#10263d;font:700 11px system-ui,sans-serif;';
+    document.body.appendChild(preview);
+  }
+  const p=isoGridToViewPoint(segment[endpointKey]);
+  const q=isoGridToViewPoint(segment[endpointKey==='a'?'b':'a']);
+  const dx=q.x-p.x,dy=q.y-p.y,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len;
+  const lengthLabel=isoGridEsc(isoGridSegmentLabel(segment));
+  // The fixed pipe end and snapped moving endpoint are represented inside
+  // the magnifier, independent of the finger covering the actual endpoint.
+  preview.innerHTML='<div style="font-size:10px">PIPE ENDPOINT PREVIEW</div><svg viewBox="0 0 142 92" width="140" height="92"><path d="M0 46 H142 M71 0 V92" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 4"/><line x1="'+(71+ux*51)+'" y1="'+(46+uy*51)+'" x2="71" y2="46" stroke="#0f172a" stroke-width="5" stroke-linecap="round"/><circle cx="71" cy="46" r="12" fill="#fef3c7" stroke="#b45309" stroke-width="3"/><path d="M63 46 H79 M71 38 V54" stroke="#b45309" stroke-width="2"/></svg><div>S'+(segmentIndex+1)+' · '+lengthLabel+'</div>';
+  const w=window.innerWidth||400,h=window.innerHeight||800;
+  let x=event.clientX+34,y=event.clientY-155;
+  if(x+156>w)x=event.clientX-180;
+  preview.style.left=Math.max(4,Math.min(w-156,x))+'px';
+  preview.style.top=Math.max(4,Math.min(h-145,y))+'px';
+}
+function isoGridRemovePipeDragPreview(){document.getElementById('isoPipeDragPreview')?.remove();}
+
+function isoGridStartEndpointDrag(event, segmentIndex, endpointKey, currentEvent = null) {
   event.preventDefault();
   event.stopPropagation();
   const drawing = isoGridCurrent();
@@ -2222,7 +2251,7 @@ function isoGridStartEndpointDrag(event, segmentIndex, endpointKey) {
   let lastPoint = { ...original };
   isoGridEndpointDragging = true;
   isoGridPanActive = false;
-  let pointer = { clientX: event.clientX, clientY: event.clientY };
+  let pointer = { clientX: currentEvent?.clientX ?? event.clientX, clientY: currentEvent?.clientY ?? event.clientY };
   let frame = 0;
   let previousTime = 0;
   let finished = false;
@@ -2252,6 +2281,7 @@ function isoGridStartEndpointDrag(event, segmentIndex, endpointKey) {
     });
     if (wasActiveEndpoint) isoGridLastPoint = { ...point };
     isoGridRender();
+    isoGridPipeDragPreview(segment, endpointKey, pointer, segmentIndex);
   };
   const move = moveEvent => {
     if (moveEvent.pointerId !== event.pointerId || finished) return;
@@ -2284,6 +2314,7 @@ function isoGridStartEndpointDrag(event, segmentIndex, endpointKey) {
     finished = true;
     isoGridEndpointDragging = false;
     cancelAnimationFrame(frame);
+    isoGridRemovePipeDragPreview();
     window.removeEventListener('pointermove', move);
     window.removeEventListener('pointerup', up);
     window.removeEventListener('pointercancel', up);
@@ -2303,6 +2334,7 @@ function isoGridStartEndpointDrag(event, segmentIndex, endpointKey) {
   window.addEventListener('pointerup', up);
   window.addEventListener('pointercancel', up);
   window.addEventListener('blur', blur);
+  applyPointer();
   frame = requestAnimationFrame(tick);
 }
 
