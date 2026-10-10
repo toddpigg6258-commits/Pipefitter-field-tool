@@ -2039,43 +2039,106 @@ function isoGridDeleteSelectedSymbol() {
   isoGridRender();
 }
 
-function isoGridStartSymbolDrag(event, index) {
-  event.preventDefault();
-  event.stopPropagation();
-  const drawing = isoGridCurrent();
-  const symbol = drawing.symbols[index];
-  if (!symbol) return;
-  isoGridSelectedSymbol = index;
-  isoGridSelectedSegment = -1;
-  const move = moveEvent => {
-    if (!drawing.symbols[index]) return;
-    if (symbol.type === 'NORTH_ARROW') {
-      const displayPoint = isoGridDisplayEventPoint(moveEvent, false, false);
-      if (!displayPoint) return;
-      drawing.symbols[index].x = displayPoint.x;
-      drawing.symbols[index].y = displayPoint.y;
-      drawing.symbols[index].snapped = false;
-      isoGridRender();
-      return;
-    }
-    const movePoint = isoGridEventPoint(moveEvent, true, true);
-    if (!movePoint) return;
-    const node = isoGridNearestNode(movePoint, ISO_GRID_NODE_SNAP);
-    drawing.symbols[index].x = node ? node.x : movePoint.x;
-    drawing.symbols[index].y = node ? node.y : movePoint.y;
-    drawing.symbols[index].snapped = true;
-    isoGridRender();
-  };
-  const up = () => {
-    window.removeEventListener('pointermove', move);
-    window.removeEventListener('pointerup', up);
-    isoGridSetStatus(`${isoGridSymbolName(symbol.type)} moved on the grid. Pipe geometry was not changed.`);
-    isoGridRender();
-  };
-  window.addEventListener('pointermove', move);
-  window.addEventListener('pointerup', up);
-}
 
+function isoGridFittingDragPreview(symbol,index,event) {
+  let preview=document.getElementById('isoFittingDragPreview');
+  if(!preview){
+    preview=document.createElement('div');
+    preview.id='isoFittingDragPreview';
+    preview.style.cssText='position:fixed;width:126px;min-height:122px;z-index:99999;pointer-events:none;background:#ffffffee;border:2px solid #d97706;border-radius:14px;box-shadow:0 5px 20px #11182755;padding:3px;text-align:center;color:#10263d;font:700 11px system-ui,sans-serif;';
+    document.body.appendChild(preview);
+  }
+  const point=symbol.annotation?isoGridClampPoint(symbol):isoGridToViewPoint(symbol);
+  const svg=isoGridSymbolMarkup(symbol,index);
+  preview.innerHTML='<div style="font-size:10px">POSITION PREVIEW</div><svg viewBox="0 0 120 92" width="116" height="89"><g transform="translate('+(60-point.x)+' '+(44-point.y)+')">'+svg+'</g></svg><div>'+isoGridEsc(isoGridSymbolName(symbol.type))+'</div>';
+  const vw=window.innerWidth||400,vh=window.innerHeight||800;
+  let x=event.clientX+34,y=event.clientY-146;
+  if(x+132>vw)x=event.clientX-158;
+  x=Math.max(4,Math.min(vw-132,x));
+  y=Math.max(4,Math.min(vh-130,y));
+  preview.style.left=x+'px';preview.style.top=y+'px';
+}
+function isoGridRemoveFittingPreview() {
+  document.getElementById('isoFittingDragPreview')?.remove();
+}
+function isoGridStartSymbolDrag(event,index){
+  if(isoGridPinchActive)return;
+  const drawing=isoGridCurrent(),symbol=drawing.symbols[index];
+  if(!symbol)return;
+  event.preventDefault();event.stopPropagation();
+  isoGridSelectedSymbol=index;isoGridSelectedSegment=-1;
+  const pointerId=event.pointerId,startX=event.clientX,startY=event.clientY;
+  let moved=false,finished=false;
+  isoGridFittingDragActive=true;
+  isoGridPanActive=false;
+  const cleanup=()=>{
+    isoGridFittingDragActive=false;
+    isoGridRemoveFittingPreview();
+    window.removeEventListener('pointermove',move);
+    window.removeEventListener('pointerup',finish);
+    window.removeEventListener('pointercancel',cancel);
+    window.removeEventListener('blur',blur);
+  };
+  const move=e=>{
+    if(finished||e.pointerId!==pointerId)return;
+    if(isoGridPinchActive){cancel(e);return;}
+    if(!moved && Math.hypot(e.clientX-startX,e.clientY-startY)<7)return;
+    moved=true;
+    e.preventDefault();e.stopPropagation();
+    if(symbol.type==='NORTH_ARROW'){
+      const p=isoGridDisplayEventPoint(e,false,false);
+      if(p){symbol.x=p.x;symbol.y=p.y;symbol.snapped=false;}
+    }else{
+      const p=isoGridEventPoint(e,false,false);
+      if(!p)return;
+      if(symbol.splitNode){
+        isoGridMoveSplitFitting(symbol,p);
+      }else if(symbol.type==='OLET'&&isoGridOletSegment(symbol)){
+        const seg=isoGridOletSegment(symbol),projected=isoGridProjectOnSegment(seg,p);
+        if(projected){
+          symbol.positionFraction=projected.t;
+          symbol.ccMeasure='';
+          isoGridSyncOlets();
+        }
+      }else{
+        const hit=isoGridNearestSegment(p,26);
+        const target=hit?hit.point:isoGridNearestNode(p,20)||p;
+        symbol.x=target.x;symbol.y=target.y;
+        if(hit){
+          const seg=drawing.segments[hit.index],a=isoGridToViewPoint(seg.a),b=isoGridToViewPoint(seg.b);
+          symbol.rotation=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+        }
+        symbol.snapped=!!hit;
+      }
+    }
+    isoGridRender();
+    isoGridFittingDragPreview(symbol,index,e);
+    isoGridPanSuppressUntil=Date.now()+650;
+  };
+  const finish=e=>{
+    if(finished || e?.pointerId!=null&&e.pointerId!==pointerId)return;
+    finished=true;cleanup();
+    if(moved){
+      isoGridTapGuard={until:Date.now()+850};
+      isoGridPanSuppressUntil=Date.now()+850;
+      isoGridSyncOlets();
+      isoGridSyncSpoolLegs();
+      isoGridSetStatus(symbol.splitNode?'Fitting moved with its connected pipe junction. Edit C-C section measurements for exact position.':
+        symbol.type==='OLET'?'O-let moved on continuous pipe. Its C-C location updated.':
+        isoGridSymbolName(symbol.type)+' moved. Preview shows the placement beside your finger.');
+    }
+    isoGridRender();
+  };
+  const cancel=e=>{
+    if(e?.pointerId!=null&&e.pointerId!==pointerId)return;
+    finish(e);
+  };
+  const blur=()=>finish();
+  window.addEventListener('pointermove',move,{passive:false});
+  window.addEventListener('pointerup',finish);
+  window.addEventListener('pointercancel',cancel);
+  window.addEventListener('blur',blur);
+}
 // Keep room ahead of the active endpoint without changing the user's zoom.
 function isoGridFollowPoint(point) {
   const viewport = $('isoTapViewport');
@@ -2619,7 +2682,7 @@ function initIsoDrawing() {
   const viewport = $('isoTapViewport');
   let panStart = null;
   scene.addEventListener('touchstart', event => {
-    if (!viewport || event.touches.length !== 1 || isoGridPinchActive || isoGridEndpointDragging || event.target.closest?.('.iso-end-handle, .iso-end-touch, [data-grid-measure], [data-grid-rise], [data-grid-run]')) {
+    if (!viewport || event.touches.length !== 1 || isoGridPinchActive || isoGridEndpointDragging || isoGridFittingDragActive || event.target.closest?.('.iso-end-handle, .iso-end-touch, [data-grid-symbol], [data-grid-measure], [data-grid-rise], [data-grid-run]')) {
       panStart = null;
       return;
     }
@@ -2634,7 +2697,7 @@ function initIsoDrawing() {
     isoGridPanActive = false;
   }, { capture: true, passive: true });
   scene.addEventListener('touchmove', event => {
-    if (!viewport || !panStart || event.touches.length !== 1 || isoGridPinchActive || isoGridEndpointDragging) return;
+    if (!viewport || !panStart || event.touches.length !== 1 || isoGridPinchActive || isoGridEndpointDragging || isoGridFittingDragActive) return;
     const touch = event.touches[0];
     const dx = touch.clientX - panStart.x;
     const dy = touch.clientY - panStart.y;
