@@ -17,7 +17,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Pipefitter Field Pro</title>
-    <link rel="stylesheet" href="./app.css?v=85" />
+    <link rel="stylesheet" href="./app.css?v=94" />
   </head>
   <body>
     <div class="app">
@@ -662,7 +662,8 @@
               <label>Offset run / horizontal<input id="isoGridRunMeasure" placeholder="Example: 5'" onclick="openMeasurePad('isoGridRunMeasure','offset run')"></label>
               <label>Section note<input id="isoGridNote" placeholder="Field fit / weld / tie-in / elevation"></label>
             </div>
-            <div class="actions iso-grid-edit-actions"><button class="primary" onclick="openMeasurePad('isoGridMeasure','Selected pipe section')">ADD / EDIT MEASUREMENT</button><button onclick="isoGridSaveSegmentInfo()">SAVE SECTION / O-LET C-C</button><button onclick="isoGridToggleSegmentComplete()">TOGGLE COMPLETE</button><button onclick="isoGridDeleteSelectedSegment()">DELETE SECTION</button></div>
+            <div class="iso-grid-edit-actions"><button type="button" class="primary" onclick="isoGridEditSelectedMeasurement()">ADD / EDIT MEASUREMENT</button><button type="button" onclick="isoGridSaveSegmentInfo()">SAVE MEASUREMENTS</button><button type="button" onclick="isoGridToggleSegmentComplete()">TOGGLE COMPLETE</button><button type="button" onclick="isoGridDeleteSelectedSegment()">DELETE PIPE</button><button type="button" onclick="isoGridDeleteSelectedSymbol()">DELETE FITTING / NOTE</button></div>
+            <div class="iso-note-entry"><label for="isoDrawingText">Drawing note / label</label><textarea id="isoDrawingText" rows="2" placeholder="Type your note, then tap PLACE NOTE and touch the drawing"></textarea><div class="iso-note-actions"><button type="button" onclick="isoGridArmDrawingNote()">PLACE NOTE</button><button type="button" onclick="isoGridUpdateSelectedNote()">UPDATE SELECTED NOTE</button></div><small>Tap a note to select it. Drag to move it. Delete fitting / note removes the selected note.</small></div>
             <div class="note-box muted">Normal pipe stays on the standard ISO diagonal and vertical axes. For an offset, rough in the direction and enter RISE and RUN. The offset leaves the normal grid plane and falls between the nearest diagonal and vertical axes. Equal RISE and RUN produces the halfway 45° plane; other calculated angles stay between those axes. Offset travel is drawn to the same visual measurement scale as the rest of the pipe, and no compass-direction label is added.</div>
           </div>
 
@@ -884,7 +885,7 @@
     <script src="./takeoffs.js?v=35"></script>
     <script src="./torque.js?v=35"></script>
     <script src="./iso.js?v=85"></script>
-    <script src="./iso-draw.js?v=92"></script>
+    <script src="./iso-draw.js?v=94"></script>
     <script src="./fusion.js?v=2"></script>
     <script src="./tools.js?v=35"></script>
     <script src="./init.js?v=35"></script>

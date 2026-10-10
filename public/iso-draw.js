@@ -929,7 +929,8 @@ function isoGridSymbolMarkup(symbol, index) {
   const base = 'fill="white" stroke="#111827" stroke-width="2.2" vector-effect="non-scaling-stroke"';
   const line = 'fill="none" stroke="#111827" stroke-width="2.2" vector-effect="non-scaling-stroke"';
   let shape = '';
-  if (type === 'ELBOW90') shape = `<path d="M -22 14 H -10 Q 7 14 7 -3 V -22" ${line}/><circle cx="-10" cy="14" r="2.5" fill="#111827"/>`;
+  if (type === 'TEXT_NOTE') shape = `<text class="iso-custom-note" x="0" y="0" transform="rotate(${-displayRotation})">${isoGridEsc(symbol.text || 'NOTE')}</text>`;
+  else if (type === 'ELBOW90') shape = `<path d="M -22 14 H -10 Q 7 14 7 -3 V -22" ${line}/><circle cx="-10" cy="14" r="2.5" fill="#111827"/>`;
   else if (type === 'ELBOW45') shape = `<path d="M -22 12 H -8 L 18 -14" ${line}/><circle cx="-8" cy="12" r="2.5" fill="#111827"/>`;
   else if (type === 'TEE') shape = `<path d="M -24 0 H 24" ${line}/><g transform="rotate(${branchRotation})"><path d="M 0 0 V -23" ${line}/></g><circle cx="0" cy="0" r="2.5" fill="#111827"/>`;
   else if (type === 'TEE_UP') shape = `<path d="M -24 0 H 24" ${line}/><g transform="rotate(${branchRotation})"><path d="M 0 0 V -8" ${line}/><circle cx="0" cy="-16" r="7" ${base}/><circle cx="0" cy="-16" r="2.5" fill="#111827"/></g>`;
@@ -1023,6 +1024,7 @@ function isoGridUpdateEditor() {
     if (riseMeasure) riseMeasure.value = '';
     if (runMeasure) runMeasure.value = '';
     if (note) note.value = '';
+    if(symbol.type==='TEXT_NOTE'&&$('isoDrawingText'))$('isoDrawingText').value=symbol.text||'';
     return;
   }
   if (info) info.textContent = 'Tap a pipe section to highlight it, or tap a blue fitting symbol to move / rotate it.';
@@ -1344,6 +1346,7 @@ function isoGridRender() {
   drawing.symbols.forEach((symbol,index)=>{
     if(symbol.type==='OLET'&&isoGridMeasurementMode!=='OFF')markup+=isoGridOletDimensionMarkup(symbol,index);
     markup+=isoGridSymbolMarkup(symbol,index);
+    markup+=isoGridFittingNameMarkup(symbol,index);
   });
   if (isoGridLastPoint) {
     const currentViewPoint = isoGridLastPoint?.isoDisplayPoint && isoGridView === 'ISO' ? isoGridLastPoint.isoDisplayPoint : isoGridToViewPoint(isoGridLastPoint);
@@ -1626,6 +1629,35 @@ function isoSetView(mode) {
   isoGridRender();
 }
 
+
+function isoGridEditSelectedMeasurement(){
+  if(isoGridCurrent().symbols[isoGridSelectedSymbol]?.type==='OLET'){isoGridQuickEditOletCC();return;}
+  if(isoGridSelectedSegment<0){isoGridSetStatus('First tap a pipe section or O-let to edit its measurement.');return;}
+  isoGridUpdateEditor();if(typeof openMeasurePad==='function')openMeasurePad('isoGridMeasure','Selected pipe measurement');
+}
+function isoGridArmDrawingNote(){
+  const content=$('isoDrawingText')?.value?.trim();
+  if(!content){isoGridSetStatus('Type a drawing note first.');return;}
+  isoGridMode='TEXT_NOTE';
+  document.querySelectorAll('[data-iso-stamp]').forEach(el=>el.classList.remove('on'));
+  isoGridSetStatus('Tap the drawing where you want the note: '+content);
+}
+function isoGridUpdateSelectedNote(){
+  const symbol=isoGridCurrent().symbols[isoGridSelectedSymbol];
+  const content=$('isoDrawingText')?.value?.trim();
+  if(!symbol||symbol.type!=='TEXT_NOTE'){isoGridSetStatus('Tap an existing note on the drawing first.');return;}
+  if(!content){isoGridSetStatus('Type the replacement note first.');return;}
+  symbol.text=content.slice(0,250);
+  isoGridSetStatus('Drawing note updated.');isoGridRender();
+}
+function isoGridFittingNameMarkup(symbol,index){
+  const type=symbol.type;
+  if(['TEE','TEE_UP','TEE_DOWN','ELBOW90','NORTH_ARROW','TEXT_NOTE','FLOW','SLOPE','LEVEL_REF'].includes(type))return '';
+  const at=isoGridToViewPoint(symbol);
+  const name=isoGridEsc(isoGridSymbolName(type));
+  const offset=symbol.nameLabelOffset||{x:0,y:0};
+  return '<text class="iso-fitting-name" x="'+(at.x+offset.x)+'" y="'+(at.y-31+offset.y)+'">'+name+'</text>';
+}
 function isoGridSetMode(mode, button) {
   isoGridMode = mode || 'LINE';
   document.querySelectorAll('[data-iso-stamp]').forEach(item => item.classList.remove('on'));
@@ -1665,6 +1697,13 @@ function isoGridTap(event, bypassTapGuard = false) {
   let point = isoGridEventPoint(event,isoGridMode==='LINE',isoGridMode==='LINE');
   if (!point) return;
   const drawing = isoGridCurrent();
+  if (isoGridMode === 'TEXT_NOTE') {
+    const text=$('isoDrawingText')?.value?.trim();
+    if(!text){isoGridSetStatus('Enter your note first.');return;}
+    drawing.symbols.push({type:'TEXT_NOTE',x:point.x,y:point.y,text:text.slice(0,250),snapped:false,auto:false});
+    isoGridSelectedSymbol=drawing.symbols.length-1;isoGridSelectedSegment=-1;
+    isoGridReturnToLineMode();isoGridSetStatus('Drawing note placed. Drag to reposition or select it to edit.');isoGridRender();return;
+  }
   if (isoGridMode !== 'LINE') {
     if (isoGridMode === 'END_FLANGE') {
       const nearest = isoGridNearestSegment(point, 32);
@@ -1770,6 +1809,7 @@ function isoGridSelectSymbol(index) {
   isoGridSelectedSymbol = index;
   isoGridSelectedSegment = -1;
   const symbol = drawing.symbols[index];
+  if(symbol.type==='TEXT_NOTE'&&$('isoDrawingText'))$('isoDrawingText').value=symbol.text||'';
   if(symbol.type==='OLET'&&isoGridOletSegment(symbol))isoGridSetStatus('O-let selected on continuous pipe. Tap EDIT O-LET C-C to adjust its location.');
   else if (isoGridIsTee(symbol.type)) isoGridSetStatus(`${isoGridSymbolName(symbol.type)} selected. Rotate controls move only the bullhead / branch; the straight-through run stays with the pipe.`);
   else isoGridSetStatus(`${isoGridSymbolName(symbol.type)} selected. Drag it to another grid point without changing the pipe, or rotate it ±15° / 90°.`);
@@ -1960,10 +2000,7 @@ function isoGridSaveSegmentInfo() {
 
 function isoGridToggleSegmentComplete() {
   const segment = isoGridCurrent().segments[isoGridSelectedSegment];
-  if (!segment) {
-    isoGridSetStatus('Select a pipe section first.');
-    return;
-  }
+  if (!segment) {isoGridSetStatus('Select a pipe section before toggling complete.');return;}
   segment.complete = !segment.complete;
   isoGridSetStatus(`Section S${isoGridSelectedSegment + 1} marked ${segment.complete ? 'complete' : 'open'}.`);
   isoGridRender();
