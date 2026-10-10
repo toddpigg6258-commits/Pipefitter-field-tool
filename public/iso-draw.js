@@ -450,6 +450,14 @@ function isoGridPlaceModeOnSegment(index, event) {
   const drawing = isoGridCurrent();
   const segment = drawing.segments[index];
   if (!segment || isoGridMode === 'LINE') return false;
+  if (isoGridMode === 'TEXT_NOTE') {
+    const text=$('isoDrawingText')?.value?.trim();
+    const point=isoGridEventPoint(event,false,false);
+    if(!text||!point){isoGridSetStatus('Type a note, then tap the drawing to place it.');return true;}
+    drawing.symbols.push({type:'TEXT_NOTE',x:point.x,y:point.y,text:text.slice(0,250),snapped:false,auto:false});
+    isoGridSelectedSymbol=drawing.symbols.length-1;isoGridSelectedSegment=-1;
+    isoGridReturnToLineMode();isoGridSetStatus('Drawing note placed. Drag it to reposition.');isoGridRender();return true;
+  }
   const type = isoGridMode;
   const rawPoint = isoGridEventPoint(event, false);
   if (!rawPoint) return false;
