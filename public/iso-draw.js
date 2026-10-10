@@ -1127,6 +1127,8 @@ function isoGridResetMeasurementLayout() {
   if (!segment) return;
   segment.measurementScale = 1;
   segment.measureLabelOffset = { x: 0, y: 0 };
+  segment.measureLabelLocked = false;
+  segment.measureLane = null;
   segment.riseLabelOffset = { x: 0, y: 0 };
   segment.runLabelOffset = { x: 0, y: 0 };
   isoGridSetStatus(`Measurement layout for S${isoGridSelectedSegment + 1} reset. Drag a label to reposition it or use DIM − / DIM + to resize.`);
@@ -1149,6 +1151,8 @@ function isoGridFlipMeasurementSide() {
   const currentSide = segment.dimensionSide === 1 || segment.dimensionSide === -1 ? segment.dimensionSide : autoSide;
   segment.dimensionSide = -currentSide;
   segment.measureLabelOffset = { x: 0, y: 0 };
+  segment.measureLabelLocked = false;
+  segment.measureLane = null;
   isoGridSetStatus(`Dimension for S${isoGridSelectedSegment + 1} flipped to the opposite side of the pipe.`);
   isoGridRender();
 }
@@ -1164,14 +1168,14 @@ function isoGridToggleMeasurementRotation() {
 }
 
 // Both witness lines stay attached to the pipe; the dimension and label move together.
-function isoGridDimensionMarkup(index, kind, anchorA, anchorB, baseA, baseB, offset, text, scale, angle = 0) {
+function isoGridDimensionMarkup(index, kind, anchorA, anchorB, baseA, baseB, offset, text, scale, angle = 0, placement = null) {
   const a = { x: baseA.x + offset.x, y: baseA.y + offset.y };
   const b = { x: baseB.x + offset.x, y: baseB.y + offset.y };
   const x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
   const main = kind === 'measure';
   const width = (main ? 94 : 62) * scale;
   const height = (main ? 15 : 18) * scale;
-  return `<g data-dimension="${kind}" data-dimension-section="${index}"><line x1="${anchorA.x}" y1="${anchorA.y}" x2="${a.x}" y2="${a.y}" class="iso-tap-witness"/><line x1="${anchorB.x}" y1="${anchorB.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-witness"/><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><g data-dimension-label><g transform="rotate(${angle} ${x} ${y})"><rect x="${x - width / 2}" y="${y - (main ? 9 : 10) * scale}" width="${width}" height="${height}" rx="${3 * scale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-${kind}="${index}"/><text x="${x}" y="${y + (main ? 1 : 2) * scale}" class="iso-tap-dim-text iso-movable-measure" data-grid-${kind}="${index}" style="font-size:${(main ? 9 : 10) * scale}px">${isoGridEsc(text)}</text></g></g></g>`;
+  return `<g data-dimension="${kind}" data-dimension-section="${index}"${placement ? ` data-dimension-lane="${placement.lane}" data-dimension-side="${placement.side}"` : ''}><line x1="${anchorA.x}" y1="${anchorA.y}" x2="${a.x}" y2="${a.y}" class="iso-tap-witness"/><line x1="${anchorB.x}" y1="${anchorB.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-witness"/><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><g data-dimension-label><g transform="rotate(${angle} ${x} ${y})"><rect x="${x - width / 2}" y="${y - (main ? 9 : 10) * scale}" width="${width}" height="${height}" rx="${3 * scale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-${kind}="${index}"/><text x="${x}" y="${y + (main ? 1 : 2) * scale}" class="iso-tap-dim-text iso-movable-measure" data-grid-${kind}="${index}" style="font-size:${(main ? 9 : 10) * scale}px">${isoGridEsc(text)}</text></g></g></g>`;
 }
 
 function isoGridRender() {
@@ -1224,7 +1228,7 @@ function isoGridRender() {
     const pipeMidY = (a.y + b.y) / 2;
     const autoDimensionSide = (nx * (pipeMidX - ISO_GRID_WIDTH / 2) + ny * (pipeMidY - ISO_GRID_HEIGHT / 2)) >= 0 ? 1 : -1;
     let dimensionSide = segment.dimensionSide === 1 || segment.dimensionSide === -1 ? segment.dimensionSide : autoDimensionSide;
-    let offset = 28;
+    let offset = segment.measureLabelLocked && Number(segment.measureLane) >= 7 ? Number(segment.measureLane) : 28;
     let dimensionTextAngle = Math.atan2(dy, dx) * 180 / Math.PI;
     while (dimensionTextAngle > 90) dimensionTextAngle -= 180;
     while (dimensionTextAngle < -90) dimensionTextAngle += 180;
@@ -1235,7 +1239,7 @@ function isoGridRender() {
     const visibleDimension = isoGridMeasurementMode === 'ALL' || (isoGridMeasurementMode === 'AUTO' && index === isoGridSelectedSegment);
     // Place automatic dimension lanes clear of other labels and pipe runs.
     // Keep user-dragged labels exactly where the user left them.
-    const explicitOffset = Math.hypot(measureLabelOffset.x, measureLabelOffset.y) > 1;
+    const explicitOffset = !!segment.measureLabelLocked || Math.hypot(measureLabelOffset.x, measureLabelOffset.y) > 1;
     const angleRad = dimensionTextAngle * Math.PI / 180;
     const halfW = Math.abs(Math.cos(angleRad)) * 47 * measurementScale + Math.abs(Math.sin(angleRad)) * 10 * measurementScale + 8;
     const halfH = Math.abs(Math.sin(angleRad)) * 47 * measurementScale + Math.abs(Math.cos(angleRad)) * 10 * measurementScale + 8;
@@ -1284,7 +1288,7 @@ function isoGridRender() {
         ? 'iso-tap-pipe complete'
         : 'iso-tap-pipe';
     const showSegmentMeasurements = isoGridMeasurementMode === 'ALL' || (isoGridMeasurementMode === 'AUTO' && index === isoGridSelectedSegment);
-    const dimensionMarkup = showSegmentMeasurements ? isoGridDimensionMarkup(index, 'measure', a, b, d1, d2, measureLabelOffset, dimension, measurementScale, dimensionTextAngle) : '';
+    const dimensionMarkup = showSegmentMeasurements ? isoGridDimensionMarkup(index, 'measure', a, b, d1, d2, measureLabelOffset, dimension, measurementScale, dimensionTextAngle, { lane: offset, side: dimensionSide }) : '';
     const leftX = Math.max(26, Math.min(a.x, b.x) - 34); const topY = Math.min(a.y, b.y); const bottomY = Math.max(a.y, b.y); const midY = (topY + bottomY) / 2; const leftEnd = a.x <= b.x ? a : b; const rightEnd = a.x <= b.x ? b : a; const runY = Math.min(ISO_GRID_HEIGHT - 28, Math.max(a.y, b.y) + 34); const runMidX = (leftEnd.x + rightEnd.x) / 2;
     const offsetMath = isoGridOffsetMath(segment);
     let offsetGuideMarkup = '';
@@ -1393,6 +1397,16 @@ function isoGridRender() {
           const dx = (point.clientX - startX) / isoGridZoom;
           const dy = (point.clientY - startY) / isoGridZoom;
           segment[offsetKey] = { x: original.x + dx, y: original.y + dy };
+          // Freeze the automatic dimension lane in addition to the drag offset.
+          // Otherwise selecting a different pipe or opening the saved drawing
+          // can re-run collision spacing and shift the released measurement.
+          if (offsetKey === 'measureLabelOffset' && callout) {
+            const lane = Number(callout.dataset.dimensionLane);
+            const side = Number(callout.dataset.dimensionSide);
+            if (Number.isFinite(lane) && lane >= 7) segment.measureLane = lane;
+            if (side === 1 || side === -1) segment.dimensionSide = side;
+            segment.measureLabelLocked = true;
+          }
           isoGridMeasurementDragUntil = Date.now() + 800;
           isoGridPanSuppressUntil = Date.now() + 800;
           isoGridTapGuard = { until: Date.now() + 800 };
