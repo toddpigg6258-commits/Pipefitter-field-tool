@@ -423,11 +423,16 @@ function isoGridOletCToC(symbol){
   return s?(symbol.ccMeasure?.trim()||fmtFeet(isoGridSegmentInches(s)*(symbol.positionFraction||0))):'';
 }
 function isoGridOletDimensionMarkup(symbol,index){
-  const s=isoGridOletSegment(symbol);if(!s)return '';
-  const a=isoGridToViewPoint(s.a),p=isoGridToViewPoint(symbol),b=isoGridToViewPoint(s.b);
+  const section=isoGridOletSegment(symbol);
+  if(!section)return '';
+  const a=isoGridToViewPoint(section.a),p=isoGridToViewPoint(symbol),b=isoGridToViewPoint(section.b);
   const len=Math.hypot(b.x-a.x,b.y-a.y)||1,nx=-(b.y-a.y)/len,ny=(b.x-a.x)/len,off=37;
-  const x1=a.x+nx*off,y1=a.y+ny*off,x2=p.x+nx*off,y2=p.y+ny*off,mx=(x1+x2)/2,my=(y1+y2)/2;
-  return '<g data-grid-olet="'+index+'" class="iso-olet-measure"><line x1="'+a.x+'" y1="'+a.y+'" x2="'+x1+'" y2="'+y1+'" class="iso-tap-witness"/><line x1="'+p.x+'" y1="'+p.y+'" x2="'+x2+'" y2="'+y2+'" class="iso-tap-witness"/><line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" class="iso-tap-dim"/><rect x="'+(mx-48)+'" y="'+(my-11)+'" width="96" height="21" rx="4" class="iso-tap-dim-bg"/><text x="'+mx+'" y="'+(my+3)+'" text-anchor="middle" class="iso-tap-dim-text">'+isoGridEsc('C-C '+isoGridOletCToC(symbol))+'</text></g>';
+  const lineA={x:a.x+nx*off,y:a.y+ny*off};
+  const lineB={x:p.x+nx*off,y:p.y+ny*off};
+  // Just like pipe, rise and run callouts, this offset belongs to the O-let,
+  // not to a pipe junction. It must survive redrawing and saved drawings.
+  return isoGridDimensionMarkup(index,'olet',a,p,lineA,lineB,
+    symbol.oletLabelOffset||{x:0,y:0},'C-C '+isoGridOletCToC(symbol),.9);
 }
 function isoGridQuickEditOletCC(){
   const symbol=isoGridCurrent().symbols[isoGridSelectedSymbol];
@@ -1172,10 +1177,10 @@ function isoGridDimensionMarkup(index, kind, anchorA, anchorB, baseA, baseB, off
   const a = { x: baseA.x + offset.x, y: baseA.y + offset.y };
   const b = { x: baseB.x + offset.x, y: baseB.y + offset.y };
   const x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
-  const main = kind === 'measure';
-  const width = (main ? 94 : 62) * scale;
-  const height = (main ? 15 : 18) * scale;
-  return `<g data-dimension="${kind}" data-dimension-section="${index}"${placement ? ` data-dimension-lane="${placement.lane}" data-dimension-side="${placement.side}"` : ''}><line x1="${anchorA.x}" y1="${anchorA.y}" x2="${a.x}" y2="${a.y}" class="iso-tap-witness"/><line x1="${anchorB.x}" y1="${anchorB.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-witness"/><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><g data-dimension-label><g transform="rotate(${angle} ${x} ${y})"><rect x="${x - width / 2}" y="${y - (main ? 9 : 10) * scale}" width="${width}" height="${height}" rx="${3 * scale}" class="iso-tap-dim-bg iso-movable-measure" data-grid-${kind}="${index}"/><text x="${x}" y="${y + (main ? 1 : 2) * scale}" class="iso-tap-dim-text iso-movable-measure" data-grid-${kind}="${index}" style="font-size:${(main ? 9 : 10) * scale}px">${isoGridEsc(text)}</text></g></g></g>`;
+  const main = kind === 'measure' || kind === 'olet';
+  const width = (main ? 94 : 88) * scale;
+  const height = (main ? 20 : 22) * scale;
+  return `<g data-dimension="${kind}" data-dimension-section="${index}"${placement ? ` data-dimension-lane="${placement.lane}" data-dimension-side="${placement.side}"` : ''}><line x1="${anchorA.x}" y1="${anchorA.y}" x2="${a.x}" y2="${a.y}" class="iso-tap-witness"/><line x1="${anchorB.x}" y1="${anchorB.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-witness"/><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="iso-tap-dim" marker-start="url(#isoDimArrow)" marker-end="url(#isoDimArrow)"/><g data-dimension-label data-grid-${kind}="${index}" class="iso-movable-measure"><g transform="rotate(${angle} ${x} ${y})"><rect x="${x - width / 2}" y="${y - (main ? 11 : 11) * scale}" width="${width}" height="${height}" rx="${3 * scale}" class="iso-tap-dim-bg"/><rect x="${x - Math.max(width,76)/2}" y="${y - 16 * scale}" width="${Math.max(width,76)}" height="${32*scale}" fill="transparent" class="iso-dimension-touch-target"/><text x="${x}" y="${y + (main ? 1 : 2) * scale}" class="iso-tap-dim-text" style="font-size:${(main ? 9 : 10) * scale}px">${isoGridEsc(text)}</text></g></g></g>`;
 }
 
 function isoGridRender() {
@@ -1354,9 +1359,9 @@ function isoGridRender() {
     svg.querySelectorAll(selector).forEach(element => {
       const beginDrag = (startX, startY, moveTarget, moveName, endName, cancelName, matchEvent, pointFromEvent) => {
         const index = +element.dataset[datasetKey];
-        const segment = drawing.segments[index];
-        if (!segment) return;
-        const original = segment[offsetKey] || { x: 0, y: 0 };
+        const target = offsetKey === 'oletLabelOffset' ? drawing.symbols[index] : drawing.segments[index];
+        if (!target) return;
+        const original = target[offsetKey] || { x: 0, y: 0 };
         let dragging = false;
         const callout = element.closest('[data-dimension]');
         const label = callout?.querySelector('[data-dimension-label]');
@@ -1396,23 +1401,29 @@ function isoGridRender() {
           if (!dragging) return;
           const dx = (point.clientX - startX) / isoGridZoom;
           const dy = (point.clientY - startY) / isoGridZoom;
-          segment[offsetKey] = { x: original.x + dx, y: original.y + dy };
+          target[offsetKey] = { x: original.x + dx, y: original.y + dy };
           // Freeze the automatic dimension lane in addition to the drag offset.
           // Otherwise selecting a different pipe or opening the saved drawing
           // can re-run collision spacing and shift the released measurement.
           if (offsetKey === 'measureLabelOffset' && callout) {
             const lane = Number(callout.dataset.dimensionLane);
             const side = Number(callout.dataset.dimensionSide);
-            if (Number.isFinite(lane) && lane >= 7) segment.measureLane = lane;
-            if (side === 1 || side === -1) segment.dimensionSide = side;
-            segment.measureLabelLocked = true;
+            if (Number.isFinite(lane) && lane >= 7) target.measureLane = lane;
+            if (side === 1 || side === -1) target.dimensionSide = side;
+            target.measureLabelLocked = true;
           }
           isoGridMeasurementDragUntil = Date.now() + 800;
           isoGridPanSuppressUntil = Date.now() + 800;
           isoGridTapGuard = { until: Date.now() + 800 };
-          isoGridSelectedSegment = index;
-          isoGridSelectedSymbol = -1;
-          isoGridSetStatus(`Measurement moved for S${index + 1}. Drag it anytime; FLIP DIM changes sides and ROTATE DIM changes text orientation.`);
+          if (offsetKey === 'oletLabelOffset') {
+            isoGridSelectedSymbol = index;
+            isoGridSelectedSegment = -1;
+            isoGridSetStatus('O-let C-C label moved and saved at the released position. Pipe remains continuous.');
+          } else {
+            isoGridSelectedSegment = index;
+            isoGridSelectedSymbol = -1;
+            isoGridSetStatus(`Pipe S${index + 1} ${offsetKey === 'riseLabelOffset' ? 'RISE' : offsetKey === 'runLabelOffset' ? 'RUN' : 'C-C'} measurement moved and saved at the released position.`);
+          }
           isoGridRender();
           endEvent.preventDefault();
           endEvent.stopPropagation();
@@ -1454,9 +1465,12 @@ function isoGridRender() {
       });
     });
   };
-  bindMeasurementDrag('[data-grid-measure]', 'gridMeasure', 'measureLabelOffset');
-  bindMeasurementDrag('[data-grid-rise]', 'gridRise', 'riseLabelOffset');
-  bindMeasurementDrag('[data-grid-run]', 'gridRun', 'runLabelOffset');
+  // Bind the entire label hit area, not just tiny text glyphs. Touch dragging
+  // rise/run used to miss the target at phone size, especially in offset view.
+  bindMeasurementDrag('[data-dimension-label][data-grid-measure]', 'gridMeasure', 'measureLabelOffset');
+  bindMeasurementDrag('[data-dimension-label][data-grid-rise]', 'gridRise', 'riseLabelOffset');
+  bindMeasurementDrag('[data-dimension-label][data-grid-run]', 'gridRun', 'runLabelOffset');
+  bindMeasurementDrag('[data-dimension-label][data-grid-olet]', 'gridOlet', 'oletLabelOffset');
   svg.querySelectorAll('[data-grid-segment]').forEach(element => {
     if (element.classList.contains('iso-end-handle')) return;
     let branchTouchStart = null;
@@ -1472,7 +1486,7 @@ function isoGridRender() {
       if (isoGridPinchActive || Date.now() < isoGridPinchSuppressUntil || (isoGridTapGuard && Date.now() <= isoGridTapGuard.until)) return;
       if (!touch || !start || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 18) return;
       const editingEndpoint = event.target.closest?.('.iso-end-handle, .iso-end-touch');
-      const editingMeasure = event.target.closest?.('[data-grid-measure], [data-grid-rise], [data-grid-run]');
+      const editingMeasure = event.target.closest?.('[data-grid-measure], [data-grid-rise], [data-grid-run], [data-grid-olet], [data-dimension-label]');
       if (editingEndpoint || editingMeasure) return;
       const index = +element.dataset.gridSegment;
       const touchEvent = {
@@ -1501,7 +1515,7 @@ function isoGridRender() {
       const index = +element.dataset.gridSegment;
       if (isoGridMode !== 'LINE' && isoGridPlaceModeOnSegment(index, event)) return;
       const editingEndpoint = event.target.closest?.('.iso-end-handle, .iso-end-touch');
-      const editingMeasure = event.target.closest?.('[data-grid-measure]');
+      const editingMeasure = event.target.closest?.('[data-grid-measure], [data-grid-rise], [data-grid-run], [data-grid-olet], [data-dimension-label]');
       if (isoGridMode === 'LINE' && !editingEndpoint && !editingMeasure && isoGridStartBranchOnSegment(index, event)) return;
       isoGridSelectSegment(index);
     });
@@ -1509,6 +1523,7 @@ function isoGridRender() {
   svg.querySelectorAll('[data-grid-olet]').forEach(element=>{
     element.addEventListener('click',event=>{
       event.preventDefault();event.stopPropagation();
+      if(Date.now()<isoGridMeasurementDragUntil)return;
       isoGridSelectSymbol(+element.dataset.gridOlet);
       setTimeout(isoGridQuickEditOletCC,0);
     });
@@ -2663,7 +2678,7 @@ function initIsoDrawing() {
       directPipeTap = null;
       return;
     }
-    if (event.target.closest?.('[data-grid-symbol], .iso-end-handle, .iso-end-touch, [data-grid-measure], [data-grid-rise], [data-grid-run]')) {
+    if (event.target.closest?.('[data-grid-symbol], .iso-end-handle, .iso-end-touch, [data-grid-measure], [data-grid-rise], [data-grid-run], [data-grid-olet], [data-dimension-label]')) {
       directPipeTap = null;
       return;
     }
@@ -2676,7 +2691,7 @@ function initIsoDrawing() {
     if (!start || isoGridMode !== 'LINE' || isoGridPinchActive || isoGridPanActive || Date.now() < isoGridPinchSuppressUntil) return;
     const touch = event.changedTouches[0];
     if (!touch || Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 18) return;
-    if (event.target.closest?.('[data-grid-symbol], .iso-end-handle, .iso-end-touch, [data-grid-measure], [data-grid-rise], [data-grid-run]')) return;
+    if (event.target.closest?.('[data-grid-symbol], .iso-end-handle, .iso-end-touch, [data-grid-measure], [data-grid-rise], [data-grid-run], [data-grid-olet], [data-dimension-label]')) return;
     const tapEvent = {
       clientX: touch.clientX,
       clientY: touch.clientY,
@@ -2710,7 +2725,7 @@ function initIsoDrawing() {
   const viewport = $('isoTapViewport');
   let panStart = null;
   scene.addEventListener('touchstart', event => {
-    if (!viewport || event.touches.length !== 1 || isoGridPinchActive || isoGridEndpointDragging || isoGridFittingDragActive || event.target.closest?.('.iso-end-handle, .iso-end-touch, [data-grid-symbol], [data-grid-measure], [data-grid-rise], [data-grid-run]')) {
+    if (!viewport || event.touches.length !== 1 || isoGridPinchActive || isoGridEndpointDragging || isoGridFittingDragActive || event.target.closest?.('.iso-end-handle, .iso-end-touch, [data-grid-symbol], [data-grid-measure], [data-grid-rise], [data-grid-run], [data-grid-olet], [data-dimension-label]')) {
       panStart = null;
       return;
     }
