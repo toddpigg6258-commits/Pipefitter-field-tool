@@ -2464,3 +2464,12 @@ html, body { width:100%; max-width:100%; overflow-x:hidden; }
 .creator-social p{margin:6px 0}
 .creator-photo{display:block;width:auto;max-width:min(100%,185px);height:auto;max-height:none;object-fit:contain;border-radius:12px;margin:12px 0 18px;image-rendering:auto}
 .creator-social a{display:inline-block;text-decoration:none;background:#1877f2;color:#fff;border-radius:9px;padding:13px 18px;font-weight:800;min-height:48px}
+
+/* v99 creator story */
+.creator-card h3{font-size:17px;color:#10263d;margin:22px 0 9px}
+.creator-location{font-weight:700;color:#37516e}
+.creator-highlights{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:20px 0}
+.creator-highlights>div{padding:12px 8px;background:#edf4f8;border:1px solid #ccd9e5;border-radius:9px;text-align:center}
+.creator-highlights strong{display:block;color:#10263d;font-size:16px}
+.creator-highlights span{display:block;color:#415971;font-size:11px;line-height:1.35;margin-top:5px}
+@media(max-width:440px){.creator-highlights{grid-template-columns:1fr}.creator-highlights>div{text-align:left}}
