@@ -2265,21 +2265,28 @@ function isoGridPipeDragPreview(segment, endpointKey, event, segmentIndex) {
   if(!preview){
     preview=document.createElement('div');
     preview.id='isoPipeDragPreview';
-    preview.style.cssText='position:fixed;width:148px;min-height:133px;z-index:99999;pointer-events:none;background:#ffffffed;border:2px solid #d97706;border-radius:14px;box-shadow:0 5px 20px #11182755;padding:4px;text-align:center;color:#10263d;font:700 11px system-ui,sans-serif;';
+    preview.style.cssText='position:fixed;width:190px;height:226px;z-index:99999;pointer-events:none;background:#f8fafcef;border:3px solid #f59e0b;border-radius:14px;box-shadow:0 8px 24px #0f172a77;padding:5px;box-sizing:border-box;color:#10263d;text-align:center;font:700 12px system-ui,sans-serif;';
     document.body.appendChild(preview);
   }
-  const p=isoGridToViewPoint(segment[endpointKey]);
-  const q=isoGridToViewPoint(segment[endpointKey==='a'?'b':'a']);
-  const dx=q.x-p.x,dy=q.y-p.y,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len;
-  const lengthLabel=isoGridEsc(isoGridSegmentLabel(segment));
-  // The fixed pipe end and snapped moving endpoint are represented inside
-  // the magnifier, independent of the finger covering the actual endpoint.
-  preview.innerHTML='<div style="font-size:10px">PIPE ENDPOINT PREVIEW</div><svg viewBox="0 0 142 92" width="140" height="92"><path d="M0 46 H142 M71 0 V92" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 4"/><line x1="'+(71+ux*51)+'" y1="'+(46+uy*51)+'" x2="71" y2="46" stroke="#0f172a" stroke-width="5" stroke-linecap="round"/><circle cx="71" cy="46" r="12" fill="#fef3c7" stroke="#b45309" stroke-width="3"/><path d="M63 46 H79 M71 38 V54" stroke="#b45309" stroke-width="2"/></svg><div>S'+(segmentIndex+1)+' · '+lengthLabel+'</div>';
+  const scene=$('isoTapScene'), drawingSvg=$('isoTapSvg');
+  if(!scene||!drawingSvg)return;
+  const bounds=scene.getBoundingClientRect();
+  const scaleX=bounds.width>0?bounds.width/ISO_GRID_WIDTH:isoGridZoom;
+  const scaleY=bounds.height>0?bounds.height/ISO_GRID_HEIGHT:isoGridZoom;
+  // Exact rendered drawing under the finger, not a generic pipe diagram.
+  const fingerX=(event.clientX-bounds.left)/scaleX;
+  const fingerY=(event.clientY-bounds.top)/scaleY;
+  const endpoint=segment[endpointKey]?.isoDisplayPoint&&isoGridView==='ISO'
+    ?segment[endpointKey].isoDisplayPoint:isoGridToViewPoint(segment[endpointKey]);
+  const span=96,x=fingerX-span/2,y=fingerY-span/2;
+  const overlay='<g pointer-events="none"><circle cx="'+endpoint.x+'" cy="'+endpoint.y+'" r="6" fill="#fbbf24" stroke="#78350f" stroke-width="2"/><circle cx="'+fingerX+'" cy="'+fingerY+'" r="3.5" fill="none" stroke="#0f74b6" stroke-width="1.5"/><path d="M '+(fingerX-9)+' '+fingerY+' h 5 M '+(fingerX+4)+' '+fingerY+' h 5 M '+fingerX+' '+(fingerY-9)+' v 5 M '+fingerX+' '+(fingerY+4)+' v 5" stroke="#0f74b6" stroke-width="1.5"/></g>';
+  preview.innerHTML='<div style="height:18px">UNDER YOUR FINGER · 1.8×</div><svg xmlns="http://www.w3.org/2000/svg" viewBox="'+x+' '+y+' '+span+' '+span+'" width="174" height="174" style="display:block;width:174px;height:174px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden">'+drawingSvg.innerHTML+overlay+'</svg><div style="font-size:11px;line-height:20px">S'+(segmentIndex+1)+' · amber = pipe end</div>';
   const w=window.innerWidth||400,h=window.innerHeight||800;
-  let x=event.clientX+34,y=event.clientY-155;
-  if(x+156>w)x=event.clientX-180;
-  preview.style.left=Math.max(4,Math.min(w-156,x))+'px';
-  preview.style.top=Math.max(4,Math.min(h-145,y))+'px';
+  let left=event.clientX+30,top=event.clientY-240;
+  if(left+198>w)left=event.clientX-218;
+  if(top<6)top=event.clientY+32;
+  preview.style.left=Math.max(4,Math.min(w-198,left))+'px';
+  preview.style.top=Math.max(4,Math.min(h-230,top))+'px';
 }
 function isoGridRemovePipeDragPreview(){document.getElementById('isoPipeDragPreview')?.remove();}
 
