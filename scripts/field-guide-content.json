@@ -1,14 +1,15 @@
 {
-  "edition": "0.2",
+  "edition": "0.4",
   "pages": [
     {
       "title": "Pipefitter Field Guide",
-      "group": "TEST EDITION 0.2",
+      "group": "TEST EDITION 0.4",
       "body": [
-        "Math, layout and drawing checks for the Pipefitter Field Tool app.",
-        "An original pocket guide built around a simple sequence: establish a datum, solve the geometry, account for the actual fittings, then check the finished layout.",
+        "Pipefitter Field Guide: calculations, layouts, gas cutting, rigging and practical checks for the Pipefitter Field Tool app.",
+        "Use a datum, identify actual sizes, solve the geometry, account for fittings and verify against approved work documents.",
         "Includes worked formulas, rigging calculations, model-specific torch guidance, wraparound marking and folded-paper saddle development. Example dimensions are for training.",
-        "Expanded test edition • October 2026. Prepared for hands-on feedback. Technical review is still pending."
+        "Expanded October 2026 test edition. Examples explain methods; use the marked equipment and its current instructions for live work.",
+        "New practical layout section: straight reference lines with angle iron or strut, framing-square top marks, and eccentric reducer orientation (pages 64-69)."
       ],
       "example": null,
       "check": null,
@@ -30,40 +31,60 @@
           "Pages"
         ],
         [
-          "Basics, measurements and pipe geometry",
+          "Measurements and layout geometry",
           "3-22"
         ],
         [
-          "Drawings, app controls and spool checks",
+          "ISO, spools and work checks",
           "23-31"
         ],
         [
-          "Original sources and edition notes",
+          "Technical references",
           "32"
         ],
         [
-          "Working formulas and circumferences",
+          "Formulas and circumferences",
           "33-34"
         ],
         [
-          "Weights, CG and sling tension",
+          "Rigging and slings",
           "35-39"
         ],
         [
-          "Torch setup and model-specific pressures",
+          "Oxy-acetylene CUTTING charts",
           "40-42"
         ],
         [
-          "Pipe wraparound and folded paper",
-          "43-44"
+          "Wraparound and saddles",
+          "43-48"
         ],
         [
-          "Saddle ordinates and worked templates",
-          "45-48"
-        ],
-        [
-          "Practical supplement sources",
+          "Original source references",
           "49-50"
+        ],
+        [
+          "Cutting and pipe OD/ID",
+          "51-53"
+        ],
+        [
+          "Clearances and bolt circles",
+          "54-55"
+        ],
+        [
+          "Flanges, reducers and slope",
+          "56-58"
+        ],
+        [
+          "Cut lists, checks and tests",
+          "59-61"
+        ],
+        [
+          "Field math and sources",
+          "62-63"
+        ],
+        [
+          "Straight lines, top marks and reducers",
+          "64-69"
         ]
       ],
       "diagram": null,
@@ -707,7 +728,7 @@
       "body": [
         "This guide uses original explanations, independently calculated examples and newly drawn diagrams. It does not reproduce Audel text, page layouts, illustrations or tables. Sources below support unit definitions, basic geometry or direct readers to controlling technical information.",
         "Original chapters provide geometry and reference guidance. The practical supplement adds selected model-specific factual settings with attribution; it does not reproduce a complete manufacturer manual. Mention does not imply endorsement.",
-        "Edition 0.2 is for app testing and technical review. Before commercial publication, have a qualified technical reviewer check the formulas, examples, terminology and scope. Confirm the final content and illustration rights, and record the reviewer and revision date.",
+        "Edition 0.4 is for field reference and app review. Before commercial publication, have a qualified technical reviewer check the formulas, examples, terminology and scope. Confirm the final content and illustration rights, and record the reviewer and revision date.",
         "Sources checked October 9, 2026 (UTC)."
       ],
       "example": null,
@@ -818,102 +839,143 @@
       "source": "[9] OSHA 1926.251 and manufacturer rating instructions; this is a training calculation, not a lift plan."
     },
     {
-      "title": "Oxy-acetylene: prepare the setup",
-      "group": "TORCH WORK",
+      "title": "Oxy-acetylene CUTTING setup",
+      "group": "CUTTING TORCH / NOT WELDING",
       "body": [
-        "This section is for trained operators cutting suitable ferrous material with oxygen and acetylene. Welding, heating, propane and other tip families require their own instructions. Identify the torch, attachment, tip, regulators, hose and protective devices before selecting settings.",
-        "Secure cylinders upright. Keep oxygen equipment free of oil and grease. Check hoses, fittings, seats and tips for damage; use compatible equipment and the manufacturer-required reverse-flow and flashback protection. Confirm that the gas supply can sustain the selected tip flow. [10, 11]",
-        "Follow the site hot-work process: isolation and verification of the workpiece, fire control, ventilation and appropriate eye, face and body protection. Do not torch an unknown or closed vessel or a live line.",
-        "Use the exact equipment manual for connection, valve-opening and leak-test procedures. An approved leak solution is used, never a flame. Do not light equipment with a leak or damaged parts."
+        "These pages are for OXY-ACETYLENE CUTTING of suitable carbon steel, not fusion welding, heating or brazing. Cutting tips have a central cutting-oxygen jet plus preheat ports. Welding tips and fuel-gas substitutions use different data.",
+        "Identify the exact cutting tip series and size marked on the tip. Verify compatible torch and attachment, oxygen and acetylene regulators, hose sizes, tip condition, flashback protection and required gas flow. Match that marked series to the correct chart; never average or mix charts.",
+        "Secure cylinders upright; protect oxygen gear from oil and grease. Inspect hoses and connections, leak check and purge each gas separately according to the equipment manual. Observe hot-work controls, fire watch, ventilation and suitable PPE. [10,11]",
+        "Delivery-pressure settings are read on the LOW-PRESSURE (working) gauges under the manufacturer-specified flow conditions. The cylinder contents gauges indicate supply pressure, NOT the setting to use. Never use acetylene above 15 psig. [10]"
       ],
       "example": null,
-      "check": "Acetylene delivery must not exceed 15 psig. That limit is not a recommended setting; the selected tip may require less. [10]",
+      "check": "Before adjusting any regulator, confirm: fuel is ACETYLENE, tip type and size match the chart, and torch/cutting attachment is compatible.",
       "table": null,
       "diagram": null,
-      "source": "[10] OSHA 1910.253. [11] Miller setup guidance. See source links on page 50."
+      "source": "[10] OSHA 1910.253. [11] Manufacturer oxygen-fuel setup guidance. Complete equipment manual governs use."
     },
     {
-      "title": "Gauge pressures by thickness",
-      "group": "TORCH WORK",
+      "title": "CUTTING chart: Harris V1-101",
+      "group": "ACETYLENE CUTTING PRESSURES",
       "body": [
-        "Example chart scope: Smith SC12 acetylene cutting tips on compatible SC-series equipment; Miller GE/27.0, June 2026, page 3. These are regulator delivery pressures in psig, not cylinder contents-gauge readings. [12]",
-        "Use only if the installed equipment matches. Other brands and even Smith MC12 tips have different values. Read the full current chart and equipment manual before setting the regulators."
+        "Harris V1-101 single-piece acetylene HAND-CUTTING tips for relatively clean steel, compatible with identified V-Series and Victor-style torches. Manufacturer chart PN 9700378 (08/2023), page 6. [15]",
+        "The oxygen pressure is for the cutting operation; oxygen and acetylene delivery values are in PSIG for CUTTING. They are NOT welding-tip settings. Values apply only to the exact tip series and compatible equipment. Recheck the current Harris data for torch, hose and required flow."
       ],
       "example": null,
-      "check": "Select by thickness being cut, not pipe diameter. A bevel has a longer cut path; use applicable manufacturer guidance, not an invented pressure increase.",
+      "check": "For thicker cuts the source also lists size 5 (4-6 in: O2 70-80, acetylene 12) and size 6 (6 in: O2 75-80, acetylene 15); special hose requirements apply. Never exceed approved working pressure.",
       "table": [
         [
-          "Steel in",
-          "SC12 tip",
+          "Steel thickness in",
+          "Tip size",
           "Oxygen psig",
           "Acetylene psig"
         ],
         [
-          "1/4",
-          "SC12-0",
-          "30",
-          "10"
+          "To 1/8",
+          "000",
+          "20-30",
+          "5"
         ],
         [
-          "3/8",
-          "SC12-0",
-          "35",
-          "10"
+          "1/8 to 5/16",
+          "00",
+          "20-30",
+          "5"
         ],
         [
-          "1/2",
-          "SC12-1",
-          "35",
-          "10"
+          "5/16 to 5/8",
+          "0",
+          "30-40",
+          "7"
         ],
         [
-          "5/8",
-          "SC12-1",
-          "40",
-          "10"
-        ],
-        [
-          "3/4",
-          "SC12-2",
-          "36",
-          "10"
-        ],
-        [
+          "5/8 to 1",
           "1",
-          "SC12-2",
-          "41",
-          "10"
+          "40-50",
+          "7"
         ],
         [
-          "1-1/2",
-          "SC12-3",
-          "42",
-          "10"
-        ],
-        [
+          "1 to 2",
           "2",
-          "SC12-3",
-          "47",
+          "45-55",
+          "8"
+        ],
+        [
+          "2 to 3",
+          "3",
+          "50-60",
+          "9"
+        ],
+        [
+          "3 to 4",
+          "4",
+          "60-75",
           "10"
         ]
       ],
       "diagram": null,
-      "source": "[12] Selected factual values from Smith/Miller GE/27.0; original table layout. No universal pressure chart is implied."
+      "source": "[15] The Harris Products Group, V1-101 general preheat acetylene cutting tips, PN 9700378, 08/2023, page 6. Selected facts re-tabulated, not a complete copy."
     },
     {
-      "title": "Set, light and shut down",
-      "group": "TORCH WORK",
+      "title": "CUTTING chart: Victor Type 101",
+      "group": "ACETYLENE CUTTING PRESSURES",
       "body": [
-        "Delivery pressure is checked under the flow conditions specified for that torch, including cutting-oxygen flow when required. A closed-valve static reading may differ. Hose losses and flow restrictions matter. Purge oxygen and fuel separately in a ventilated area away from ignition sources. [11]",
-        "For the Smith cutting-attachment procedure in [13], after setup, leak testing and purging: open fuel about 1/8 turn and ignite with a friction spark lighter. Increase fuel until smoke clears; add preheat oxygen until the acetylene feather disappears into the inner cones. Follow the manual for stand-off and cutting technique.",
-        "For that Smith attachment, normal shutdown closes preheat oxygen, then fuel, then cylinder valves. Bleed fuel and oxygen separately as directed until their gauges show zero, close torch valves and back out regulator adjustments. Follow [13] for the full sequence; other equipment may differ.",
-        "Popping, sustained hissing, flame inside the torch or overheating requires stopping under the equipment emergency procedure and inspection before reuse. Do not keep cutting by turning pressures up."
+        "Victor Type 101 acetylene hand/machine CUTTING tip operating data from ESAB. This is a DIFFERENT series from Harris V1-101 and Smith SC12; do not interchange regulator settings. Values below are selected ESAB listings. [16]",
+        "Oxygen column means CUTTING-oxygen pressure (psig); acetylene column means fuel-gas pressure (psig). ESAB also publishes separate PREHEAT-oxygen values, so check the full chart and the specific torch configuration."
       ],
       "example": null,
-      "check": "This is a companion to supervised training and the equipment manual. It is not a complete startup or emergency procedure.",
-      "table": null,
+      "check": "Separate PREHEAT-oxygen pressure values in Victor charts are for compatible three-hose torch setups. With a two-hose cutting torch, preheat oxygen shares the cutting-oxygen regulator supply. Do not try to dial in a separate preheat value on a two-hose torch.",
+      "table": [
+        [
+          "Steel thickness in",
+          "Tip size",
+          "Cut O2 psig",
+          "Acetylene psig"
+        ],
+        [
+          "1/4",
+          "00",
+          "20-25",
+          "3-5"
+        ],
+        [
+          "3/8",
+          "0",
+          "25-30",
+          "3-5"
+        ],
+        [
+          "1/2",
+          "0",
+          "25-30",
+          "3-5"
+        ],
+        [
+          "3/4",
+          "1",
+          "30-35",
+          "3-5"
+        ],
+        [
+          "1",
+          "2",
+          "40-45",
+          "3-7"
+        ],
+        [
+          "1-1/2",
+          "2",
+          "40-45",
+          "3-7"
+        ],
+        [
+          "2",
+          "3",
+          "40-45",
+          "4-9"
+        ]
+      ],
       "diagram": null,
-      "source": "[11] Miller setup guidance. [13] Smith OM-262659, sections 6 and 9; confirm the revision for your equipment."
+      "source": "[16] ESAB/Victor, Type 101 acetylene cutting tips, Operating Specifications. Selected rows reflect listed tip/part variants; consult the exact marked tip and the full source."
     },
     {
       "title": "Use a pipe wraparound",
@@ -1039,9 +1101,9 @@
       "title": "Practical supplement: sources",
       "group": "REFERENCE",
       "body": [
-        "Edition 0.2 adds formula practice, static rigging calculations, model-specific torch references and original paper-template instructions. Independently computed examples and diagrams are training material, not job approvals.",
-        "Saddle ordinates are derived here from the intersection of two perpendicular circular cylinders. Validate a paper trial on the actual diameters before fabrication. No commercial manual text or saddle table was copied.",
-        "A qualified rigging reviewer and oxy-fuel instructor must review these chapters before commercial release. Manufacturer values are selected factual data with attribution, not a licensed reproduction of a complete chart."
+        "Practical sources identify the manufacturer cutting-tip series, rigging examples and measuring references. Cutting settings on pages 41-42 are distinct CUTTING-tip data, not welding instructions.",
+        "Saddle ordinates are derived from the ideal intersection of perpendicular circular cylinders. Verify a paper trial and the actual OD on the job; reinforcement and bevel detail are not supplied by these equations.",
+        "Illustrations and worked calculations in this guide are original. The linked manufacturer and standards publications govern ratings, pressure settings and approved procedures."
       ],
       "example": null,
       "check": null,
@@ -1050,17 +1112,347 @@
       "source": "[7] Lift-All: Effect of sling angle\nhttps://lift-all.com/product-files/catalog/effect-of-angle-chart.pdf\n[8] OpenStax: Conditions for static equilibrium\nhttps://openstax.org/books/university-physics-volume-1/pages/12-1-conditions-for-static-equilibrium\n[9] OSHA 1926.251: Rigging equipment\nhttps://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.251"
     },
     {
-      "title": "Torch and marking references",
+      "title": "Sources: oxy-fuel and layout",
       "group": "REFERENCE",
       "body": [
-        "Read the complete current equipment instructions. The retrieved Smith manual URL retains an older filename but serves revision H. Recheck the actual revision and chart before operation.",
-        "Settings on page 41 apply only to the named SC12 equipment family. To prepare another table, record the torch and attachment models, tip series, gas, thickness, hose arrangement and manufacturer source."
+        "Use the current exact torch and cutting-tip documentation, rather than a setting from an unrelated tip or welding chart. The gas pressure seen on the delivery regulator may change under flow; follow the documented setup method.",
+        "Pages 41 and 42 use selected values for Harris V1-101 and Victor Type 101 CUTTING equipment only. For other brands, tip series, fuels and metal thickness, obtain the matching current manufacturer chart.",
+        "Smith SC12 is another acetylene cutting-tip family, not welding. It is not the chart used on these revised pages."
       ],
       "example": null,
       "check": null,
       "table": null,
       "diagram": null,
-      "source": "[10] OSHA 1910.253: Oxygen-fuel equipment\nhttps://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.253\n[11] Miller: Oxy-fuel setup checks\nhttps://www.millerwelds.com/en-us/resources/knowledge-hub/welding-safety/10-steps-for-safe-oxy-fuel-torch-setup\n[12] Smith/Miller GE/27.0, June 2026, p.3\nhttps://www.millerwelds.com/-/media/miller-electric/import/specsheets/file/ge270-cutting-and-gouging-tips--english.pdf\n[13] Smith OM-262659, retrieved revision H\nhttps://www.millerwelds.com/files/owners-manuals/O262659E_MIL.pdf\n[14] Jackson Safety: Wrap-A-Round tools\nhttps://www.jacksonsafety.eu/product-page/wrap-a-round-tools-1"
+      "source": "[10] OSHA 1910.253\nhttps://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.253\n[11] Miller safe oxy-fuel setup\nhttps://www.millerwelds.com/en-us/resources/knowledge-hub/welding-safety/10-steps-for-safe-oxy-fuel-torch-setup\n[15] Harris V1-101 cutting tips (PN 9700378)\nhttps://ch-delivery.lincolnelectric.com/api/public/content/bd29bc5b871a45aeb8ba5cf249542170?v=9a551e9d\n[16] Victor Type 101 cutting tips, ESAB\nhttps://esab.com/us/nam_en/products-solutions/product/gas-equipment/wear-parts/type-101-acetylene-cutting-tips/"
+    },
+    {
+      "title": "Cutting: what the cut is doing",
+      "group": "CUTTING FIELD PRACTICE",
+      "body": [
+        "A cutting attachment adds a high-purity cutting-oxygen jet through its center opening. Preheat flames bring carbon steel to the ignition condition; oxygen oxidizes the metal and blows oxide from the kerf. A welding tip does not provide that same jet.",
+        "Square cuts depend on suitable tip size, clean orifices, constant stand-off, work surface condition, cutting-oxygen flow and a steady travel rate. A crooked kerf may be a tip, angle, oxygen-flow or travel-speed issue; diagnose from the manufacturer instructions.",
+        "For pipe, mark the cut with a verified wraparound. Check the pipe is cold, isolated, cleaned and secured. Account for the kerf and any field-finishing allowance in cut length; never assume the cut face is an approved weld bevel.",
+        "Follow the specific torch operating sequence for setup, light, cut, shutoff, separate bleeding and regulator release. Do not infer the sequence from this summary."
+      ],
+      "example": null,
+      "check": "A suspected flashback, unstable flame, leak or damaged tip requires stopping work and using the documented response, not experimenting with pressure.",
+      "table": null,
+      "diagram": null,
+      "source": "[10,11,15,16] Cutting and equipment-safety references."
+    },
+    {
+      "title": "Nominal pipe size versus OD",
+      "group": "PIPE SIZES",
+      "body": [
+        "NPS is a designation, NOT the actual outside diameter for common sizes through NPS 12. Confirm pipe versus tubing before laying out a saddle, wraparound or support.",
+        "These are common nominal wrought-steel pipe outside diameters in inches. Verify actual product, applicable ASME B36.10/B36.19 data and material specification; do not substitute nominal size for a measured OD.",
+        "One nominal size may have several wall schedules. The outside diameter generally stays the same within a nominal size; the ID changes with wall thickness."
+      ],
+      "example": null,
+      "check": "For NPS 4 pipe the circumference is pi × 4.500 = 14.137 in, not pi × 4 = 12.566 in.",
+      "table": [
+        [
+          "NPS",
+          "Actual OD in"
+        ],
+        [
+          "1",
+          "1.315"
+        ],
+        [
+          "1-1/2",
+          "1.900"
+        ],
+        [
+          "2",
+          "2.375"
+        ],
+        [
+          "3",
+          "3.500"
+        ],
+        [
+          "4",
+          "4.500"
+        ],
+        [
+          "6",
+          "6.625"
+        ],
+        [
+          "8",
+          "8.625"
+        ],
+        [
+          "10",
+          "10.750"
+        ],
+        [
+          "12",
+          "12.750"
+        ]
+      ],
+      "diagram": null,
+      "source": "[17] ASME B36.10/B36.19 size designation. Selected standard steel pipe OD values."
+    },
+    {
+      "title": "Inside diameter and metal area",
+      "group": "PIPE SIZES",
+      "body": [
+        "Given actual OD D and measured or specified wall thickness t, the approximate inside diameter is d = D - 2t, provided t is positive and less than D/2.",
+        "Flow opening area is Ai = pi × d²/4. Steel cross-section area is Am = pi × (D² - d²)/4. Units are square inches if diameters are inches.",
+        "The schedule label alone does not give an ID until the actual product dimensions and corrosion or machining allowances are known. This geometric area is not a pressure rating."
+      ],
+      "example": "Illustrative OD 4.500 in, wall 0.237 in.\nID = 4.500 - 2 × 0.237 = 4.026 in.\nFlow area = pi × 4.026² / 4 = 12.731 sq in (rounded).\nUse the actual wall in the specification for a production calculation.",
+      "check": "Do not confuse inside flow area with the steel metal area needed for weight estimates.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Parallel pipe and insulation clearance",
+      "group": "LAYOUT IN THE RACK",
+      "body": [
+        "For two bare round pipes of ODs D1 and D2, their minimum geometric centerline separation for just-touching outsides is (D1 + D2)/2. Add the required clear working space C to obtain centerline spacing S = (D1 + D2)/2 + C.",
+        "If the lines have insulation thicknesses I1 and I2, use S = (D1 + D2)/2 + I1 + I2 + C. Add any further clearance required for flanges, valve operation, weld access, movement and support details.",
+        "This is an envelope layout check, not a support design or thermal-movement analysis. Insulation can be removed locally for fittings; base spacing on the actual project arrangement."
+      ],
+      "example": "6 in NPS pipe (OD 6.625) beside 4 in NPS pipe (OD 4.500).\nEach insulated 1.5 in radial thickness, with 2 in free gap required.\nS = (6.625+4.500)/2 + 1.5 + 1.5 + 2 = 10.5625 in center-to-center.",
+      "check": "Confirm whether the specified clearance is between steel, insulation jacketing or projecting components.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Bolt circles and equal bolt spacing",
+      "group": "FLANGE LAYOUT",
+      "body": [
+        "Let a flange bolt circle have diameter B and N evenly spaced holes. Adjacent hole center spacing measured straight across is the chord c = B × sin(180°/N). The circumference arc spacing is pi × B/N.",
+        "A quick two-hole orientation has the top pair straddling the vertical centerline, if the drawing specifies that orientation. Actual clocking comes from the flange standard and project detail.",
+        "The bolt circle is a layout dimension; it does not determine bolt size, flange rating, gasket selection or allowable torque. Use a verified flange template for drilling or machining."
+      ],
+      "example": "Illustrative bolt circle B = 7.500 in, N = 8.\nAngle step = 360° / 8 = 45°.\nAdjacent chord = 7.5 × sin(22.5°) = 2.870 in (approx).\nArc between holes = pi × 7.5 / 8 = 2.945 in.",
+      "check": "Check from the actual drawing whether the flange is to be two-holed, one-holed or clocked to another orientation.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Flange assembly checks",
+      "group": "FLANGE FIT-UP",
+      "body": [
+        "Verify flange class, facing, gasket material, bolt grade and pipe specification from the approved isometric and line class. Align bolt holes and centerlines before bringing faces together.",
+        "Check gasket location, face condition, parallelism and the specified gap or insertion condition. Do not use bolt tightening to pull an ill-fitting pipe or flange spool into position.",
+        "Follow the approved gasket and joint procedure for tightening sequence, lubricants and target torque/tension. No generic torque chart is given here because bolt loading depends on joint design and materials.",
+        "After assembly, document any flange mismatch, interference or gasket rework under the site quality process."
+      ],
+      "example": null,
+      "check": "If flange faces will not mate without force, correct the fit-up rather than overloading the bolts.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Concentric and eccentric reducers",
+      "group": "REDUCER FIT-UP",
+      "body": [
+        "Concentric reducers keep the large and small bore centerlines aligned. Eccentric reducers maintain a flat side and shift the smaller bore centerline relative to the larger bore.",
+        "Mark which side is to remain flat from the approved drawing and flow/service requirement: some runs must drain from the low point, while some pump suction arrangements aim to avoid vapor pockets at the high point.",
+        "Do not use a universal “flat on top” or “flat on bottom” rule. Elevation, flow direction, process fluid, vent/drain strategy and equipment nozzle geometry determine the correct arrangement.",
+        "When inserting a reducer on an ISO drawing, record both end sizes, orientation and its end-to-end takeoff. The app inline symbol does not replace a manufacturer dimension."
+      ],
+      "example": null,
+      "check": "Inspect the eccentric side in the installed view; a plan-only sketch can hide the actual flat-side orientation.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Slope: fall over run",
+      "group": "FIELD SLOPE",
+      "body": [
+        "Slope is rise or fall divided by HORIZONTAL run. For a specified fall per foot q (in/ft), total fall (in) = q × horizontal run (ft). Do not multiply by the sloped pipe length.",
+        "Percent grade = 100 × rise/run using the SAME units. Angle = arctan(rise/run); sloping travel length = sqrt(run² + rise²).",
+        "Set a level datum and record upstream and downstream centerline elevations. Check all endpoints, vents, drains, high points and tie-ins before fabricating the spool."
+      ],
+      "example": "Specified fall 1/8 in per foot across 24 ft horizontal.\nFall = 0.125 × 24 = 3.000 in.\nPercent grade = 100 × (3/288) = 1.0417%.\nAngle = arctan(3/288) ≈ 0.597°. \nPipe travel ≈ sqrt(288² + 3²) = 288.016 in.",
+      "check": "Mark flow arrow and which end is HIGH. An undirected slope note is incomplete for layout.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Field-cut chain and spool length",
+      "group": "CUT LIST",
+      "body": [
+        "Work from one approved centerline datum. List each component in order: elbows, tees, reducers, valves, flanges and straight pipe. Assign each its correct center-to-end or end-to-end takeoff.",
+        "A straight cut length is the specified datum-to-datum distance minus applicable fitting takeoffs and deliberate joint allowances. Do not subtract takeoffs twice from a dimension already given end-to-end.",
+        "Leave any bevel, root-gap, insertion, trim, shrink or field-fit allowance to the approved joint detail. A generic “weld shrinkage per joint” number is not reliable across pipe sizes and processes."
+      ],
+      "example": "Illustrative center-to-center span = 72.000 in.\nFitting A center-to-end = 6.000 in; fitting B center-to-end = 4.500 in.\nNominal straight length = 72 - 6 - 4.5 = 61.500 in.\nApply project-specific end preparation and final cut requirements separately.",
+      "check": "Record which dimensions are C-C, E-E, face-to-face or flange-face. Do not add allowances to an already defined finished piece.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Field-spool verification list",
+      "group": "QUALITY CHECKS",
+      "body": [
+        "Before cutting: reconcile the latest ISO drawing, revision, line tag, NPS/OD, wall or schedule, grade, end preparation, fit-up allowance and datum. Walk the route and identify interferences and existing tie-ins.",
+        "Before welding or bolting: identify component markings, weld IDs, orientation, valve flow direction, bolt clocking, branch takeoffs, clearances, support points and achievable access. Preserve any project-required traceability.",
+        "Before handover: remeasure critical dimensions, flange face-to-face, centerline elevation, slope, branch orientation and valve access. Record approved field changes and close punch items in the job process.",
+        "Use signed design drawings, welding procedures, inspection plans and client specifications for all quality decisions. This checklist is an organizing aid, not an acceptance code."
+      ],
+      "example": null,
+      "check": "Capture one clearly labeled datum photo or marked sketch with the measured value and revision.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Pressure-test preparation",
+      "group": "TEST BOUNDARIES",
+      "body": [
+        "Identify the approved test package, pressure boundary, temporary blinds, piping class, test medium, test pressure, hold criteria and responsible supervisor from the project procedure. This guide supplies no universal test pressure.",
+        "Confirm vents, drains, supports, calibrated instruments, isolation from equipment not included in the test, and provisions for safely filling, pressurizing and depressurizing.",
+        "Liquid testing may be preferable to pneumatic testing where permitted, but both require documented hazard controls. Never infer a safe pneumatic test or isolation scheme from a quick field calculation.",
+        "Verify valve positions and temporary parts against the approved test boundary. Check removal of test blinds and reinstatement after authorized closeout."
+      ],
+      "example": null,
+      "check": "Test execution and acceptance must follow the governing code, permits and approved site procedure.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Everyday field math checks",
+      "group": "FORMULA QUICK NOTES",
+      "body": [
+        "Equal marks around pipe circumference: pitch = pi × actual OD / N. Angular increment = 360°/N. A wraparound reference line keeps the start mark consistent.",
+        "Distance between two planar offset points: T = sqrt(R² + V²). If an angle from horizontal is known, V = T sin(A) and R = T cos(A). Enter angles in degrees.",
+        "Pipe volume in gallons for a full straight round bore: Vgal = (pi × ID²/4 × L)/231, with ID and L in inches. Do not use the volume estimate for pressure design or isolation decisions.",
+        "For a planar bolt circle, chord between adjacent holes = B sin(180°/N). All dimensions must use consistent units."
+      ],
+      "example": "Illustrative ID = 4.000 in and length = 120 in.\nV = pi × 4²/4 × 120 = 1507.965 cubic in.\nVgal = 1507.965 / 231 = 6.528 gal (approx).\nThis excludes elbows, branches, fittings, headspace and drainage residues.",
+      "check": "If a number looks wrong, estimate magnitude, check units and verify the actual pipe size before reworking it.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Cutting and pipe-size references",
+      "group": "REFERENCE",
+      "body": [
+        "New edition 0.3 pages use selected factual values from clearly identified manufacturer cutting-tip charts. Their full current instructions govern all operating settings and limitations.",
+        "The nominal pipe/OD lookup lists common standard steel-pipe dimensions for field arithmetic. ASME publications and the actual material documentation control tolerances, schedule and purchased size.",
+        "This book provides reference calculations; it does not override engineered specifications, hot-work controls, rated lifting instructions, pressure-test plans or approved job procedures."
+      ],
+      "example": null,
+      "check": null,
+      "table": null,
+      "diagram": null,
+      "source": "[15] Harris V1-101 cutting tip operating pressures, PN 9700378 (August 2023)\nhttps://ch-delivery.lincolnelectric.com/api/public/content/bd29bc5b871a45aeb8ba5cf249542170?v=9a551e9d\n[16] ESAB/Victor Type 101 acetylene CUTTING tips\nhttps://esab.com/us/nam_en/products-solutions/product/gas-equipment/wear-parts/type-101-acetylene-cutting-tips/\n[17] ASME B36.10 welded and seamless wrought steel pipe\nhttps://www.asme.org/codes-standards/find-codes-standards/welded-and-seamless-wrought-steel-pipe"
+    },
+    {
+      "title": "Straight lines with angle iron",
+      "group": "PRACTICAL LAYOUT / 1",
+      "body": [
+        "1. Support and block the pipe so it cannot roll. Clean the marking area and contact surfaces. Check the angle against a known straight edge; reject bent, twisted or burred stock.",
+        "2. Establish the starting reference mark. If the line must represent installed top, find top first (page 66). An arbitrary straight line does not establish top or elevation.",
+        "3. Place the angle lengthwise with its open inside corner over the pipe. Both inside faces must contact the pipe along its length. Choose legs long enough to seat properly on the pipe diameter.",
+        "4. Rotate the angle around the pipe until one accessible marking edge passes through the reference mark. Keep both faces seated; do not twist one end to force alignment.",
+        "5. Hold or secure the angle without moving the pipe. Draw a thin line along the same edge. Keep the marker upright and use a material-compatible marker.",
+        "6. For a longer run, overlap the previous line at two separated points before extending it. Recheck against an independently established end mark."
+      ],
+      "example": null,
+      "check": "Rocking, a raised weld seam or a dent can lift one contact face and skew the line. Reposition and verify; do not bridge an obstruction and assume accuracy.",
+      "table": null,
+      "diagram": null,
+      "source": "Layout background: U.S. Navy Steelworker, Volume 2, Chapter 3; see page 69 for references."
+    },
+    {
+      "title": "Straight lines with strut",
+      "group": "PRACTICAL LAYOUT / 2",
+      "body": [
+        "1. Use a straight, untwisted piece of channel strut. Remove nuts, brackets and debris. Inspect both lips for damage and check the proposed marking edge for straightness.",
+        "2. With the pipe blocked, place the open channel toward the pipe. Both longitudinal lips must bear evenly on the curved surface. A small pipe may enter the channel and touch the web instead: that strut size is unsuitable.",
+        "3. Check seating at both ends and the middle. Press lightly from side to side: rocking or a visible gap means you do not have a dependable reference.",
+        "4. Align one continuous marking edge with the established reference mark. Keep the channel parallel to the pipe axis with both lips seated. Do not use slot edges as a marking guide.",
+        "5. Mark along the same straight edge, then lift and reseat the strut to check repeatability. If the new position does not agree, resolve seating, straightness or pipe-shape problems before cutting.",
+        "6. Extend in overlapping lengths, matching the existing line at two separated points. Confirm the far end against a second reference mark."
+      ],
+      "example": null,
+      "check": "Strut is a field straightedge, not a calibrated center finder. Use suitable angle iron or a purpose-made pipe layout tool if the lips cannot seat evenly. Neither tool establishes a square cut around the pipe.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Find top with a framing square",
+      "group": "PRACTICAL LAYOUT / 3",
+      "body": [
+        "1. Use this method on a straight, round, horizontal pipe. Block it against rolling and check its axis with a level. For sloped pipe, use a suitable center finder or an approved survey method.",
+        "2. Check the square for squareness and the level by reversing it on the same reference surface. Clean the pipe and square. Use actual outside diameter (OD), not nominal pipe size.",
+        "3. Hold the square in a cross-section plane, perpendicular to the pipe axis. Put the inside horizontal edge against the crown and the inside vertical edge against one side. Both edges must be tangent to the pipe.",
+        "4. Level the horizontal leg while keeping both contacts seated. From the inside corner, measure OD / 2 along that horizontal leg toward the pipe center. Read from the true corner, not an offset scale zero.",
+        "5. Mark the pipe directly beneath that position. This is the 12 o’clock point for the present installed orientation. Repeat at another station without allowing the pipe to roll."
+      ],
+      "example": "Example: actual OD = 4.500 in.\nHalf OD = 2.250 in = 2-1/4 in from the inside corner.\nUsing nominal 4 in would put the mark 1/4 in off.",
+      "check": "Repeat from the opposite side: top marks should agree within the job tolerance. Recheck level, square position and roundness if they do not.",
+      "table": null,
+      "diagram": null,
+      "source": "[18] U.S. Navy Steelworker, Volume 2, Figure 3-42 (reference on page 69)."
+    },
+    {
+      "title": "Transfer and preserve top marks",
+      "group": "PRACTICAL LAYOUT / 4",
+      "body": [
+        "1. Establish top independently at two separated cross sections using page 66. Mark each point and label the intended installed top before moving the pipe.",
+        "2. Connect those marks using the angle-iron or strut method. If the edge cannot pass through both marks while seated, investigate the pipe and the marks; do not force the tool.",
+        "3. To obtain side and bottom references, wrap a nonstretch strip squarely around the pipe, align its overlapping edges and mark one exact circumference. Remove it and divide that circumference into four equal parts.",
+        "4. Refit the strip with its zero at your top mark. Transfer quarter, half and three-quarter circumference marks: 3, 6 and 9 o’clock when viewed from your declared reference end. Carry those marks lengthwise as needed.",
+        "5. Add a viewing-direction arrow or name the reference end so another fitter cannot reverse left and right. Label the datum and spool identification outside the cut area.",
+        "6. If the pipe is rolled for welding, the mark still identifies intended installed top; it is no longer necessarily gravity top. Restore the documented orientation before checking slope and branch clocking."
+      ],
+      "example": null,
+      "check": "Use a wraparound for a square circumferential line. A longitudinal straightedge and a circumferential wrap establish different references; check both before transferring a saddle or branch layout.",
+      "table": null,
+      "diagram": null,
+      "source": null
+    },
+    {
+      "title": "Choose reducer orientation",
+      "group": "PRACTICAL LAYOUT / 5",
+      "body": [
+        "1. Confirm the fitting is eccentric, and check both sizes, material, wall/end preparation and the drawing revision. Its end centerlines are offset; a concentric reducer has a common centerline.",
+        "2. Read the specified clocking and elevation basis: flat on top (FOT), flat on bottom (FOB), or another orientation. If absent or conflicting, obtain the design clarification before fit-up.",
+        "3. For horizontal liquid pump suction, an eccentric reducer is commonly arranged flat on top to avoid an air pocket. Check the entire suction profile and the specific pump instructions; this is not a universal rule for every inlet arrangement.",
+        "4. Flat on bottom can preserve a specified bottom elevation. Pump inlet geometry, drainage and solids service require the approved design; do not choose orientation from a slogan.",
+        "5. Check flow direction, adjoining elbows, slope, vents/drains and the path air or liquid must take. Avoid creating an unintended local high or low pocket.",
+        "6. Identify the flat side with a straightedge along the reducer profile, allowing for weld bevels and end lands. Mark that side and the required installed top before assembly."
+      ],
+      "example": null,
+      "check": "Flat side is not the same as a common centerline. Do not pull connected equipment into alignment to accommodate a wrongly clocked reducer.",
+      "table": null,
+      "diagram": null,
+      "source": "[19] KSB, Centrifugal Pump Lexicon: Fitting. Reference link on page 69; equipment-specific installation instructions govern."
+    },
+    {
+      "title": "Fit and verify the reducer",
+      "group": "PRACTICAL LAYOUT / 6",
+      "body": [
+        "1. Establish the installed top reference on both adjoining pipes. Support them at the specified elevations and slope. Transfer clocking marks to the reducer.",
+        "2. Dry-fit to the drawing. Check end-to-end length and the actual fitting offset from its dimensional data. For ideal matching external flat profiles, centerline offset is (large OD - small OD) / 2; verify the manufactured fitting.",
+        "3. Check the designated flat profile with a straightedge and the required slope with a level or survey. Flat on top describes clocking; it does not cancel a specified line slope. An external check does not prove internal drainage where walls differ.",
+        "4. Verify root gap, internal mismatch and end preparation against the WPS and project requirements. Check flange clocking, nozzle alignment and support contact without forcing the joint.",
+        "5. Tack only under the approved procedure, then recheck clocking, elevations, slope and joint alignment. Repeat critical checks after welding and before release."
+      ],
+      "example": null,
+      "check": "Record reducer orientation on the spool sketch. Resolve unintended air or liquid pockets with the designer before final assembly.",
+      "table": null,
+      "diagram": null,
+      "source": "[18] U.S. Navy Steelworker, Vol. 2, Figure 3-42 (public reprint)\nhttps://constructionmanuals.tpub.com/14251/css/Quartering-the-Pipe-100.htm\n[19] KSB, Fitting / reducers for avoiding air pockets\nhttps://www.ksb.com/en-global/centrifugal-pump-lexicon/f"
     }
   ],
   "sources": [
@@ -1133,6 +1525,31 @@
       "14",
       "Jackson Safety: Wrap-A-Round tools",
       "https://www.jacksonsafety.eu/product-page/wrap-a-round-tools-1"
+    ],
+    [
+      "15",
+      "Harris V1-101 acetylene CUTTING tip pressures",
+      "https://ch-delivery.lincolnelectric.com/api/public/content/bd29bc5b871a45aeb8ba5cf249542170?v=9a551e9d"
+    ],
+    [
+      "16",
+      "ESAB/Victor Type 101 acetylene CUTTING tips",
+      "https://esab.com/us/nam_en/products-solutions/product/gas-equipment/wear-parts/type-101-acetylene-cutting-tips/"
+    ],
+    [
+      "17",
+      "ASME B36.10 wrought steel pipe sizes",
+      "https://www.asme.org/codes-standards/find-codes-standards/welded-and-seamless-wrought-steel-pipe"
+    ],
+    [
+      "18",
+      "U.S. Navy Steelworker Vol. 2: top and side quarter points",
+      "https://constructionmanuals.tpub.com/14251/css/Quartering-the-Pipe-100.htm"
+    ],
+    [
+      "19",
+      "KSB: Fitting / avoiding air pockets",
+      "https://www.ksb.com/en-global/centrifugal-pump-lexicon/f"
     ]
   ]
 }
