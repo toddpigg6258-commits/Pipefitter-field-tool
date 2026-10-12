@@ -2441,3 +2441,15 @@ html, body { width:100%; max-width:100%; overflow-x:hidden; }
 .iso-fitting-name{fill:#10263d;stroke:white;stroke-width:3px;paint-order:stroke;stroke-linejoin:round;text-anchor:middle;font:bold 11px system-ui;pointer-events:none}
 .iso-custom-note{fill:#10263d;stroke:#fff;stroke-width:3px;paint-order:stroke;stroke-linejoin:round;font:bold 15px system-ui;cursor:grab;touch-action:none}
 @media(max-width:450px){.iso-grid-edit-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.iso-grid-edit-actions button{font-size:12px}}
+
+/* v96 creator profile */
+.creator-card{max-width:720px;margin:12px auto;padding:clamp(18px,5vw,32px);background:#fff;color:#10263d;border-radius:16px}
+.creator-heading{font-size:12px;font-weight:900;letter-spacing:.16em;color:#087e8b}
+.creator-card h2{font-size:clamp(29px,6vw,40px);margin:6px 0 3px}
+.creator-role{font-weight:750;color:#334155;margin:0 0 18px}
+.creator-card p{line-height:1.6}
+.creator-phrase{font-size:clamp(20px,4vw,28px);font-weight:900;color:#10263d;border-left:5px solid #f59e0b;padding:10px 15px;margin:18px 0}
+.creator-social{padding:15px;border:1px solid #cbd5e1;border-radius:12px;background:#f0f7fb}
+.creator-social b{font-size:18px}
+.creator-social a{display:inline-block;padding:12px 18px;border-radius:9px;background:#0866ff;color:#fff;font-weight:900;text-decoration:none}
+.creator-portrait{display:block;width:100%;max-height:380px;object-fit:cover;object-position:center 30%;border-radius:12px;margin:15px 0}
