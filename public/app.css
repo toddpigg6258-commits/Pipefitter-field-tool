@@ -2473,3 +2473,16 @@ html, body { width:100%; max-width:100%; overflow-x:hidden; }
 .creator-highlights strong{display:block;color:#10263d;font-size:16px}
 .creator-highlights span{display:block;color:#415971;font-size:11px;line-height:1.35;margin-top:5px}
 @media(max-width:440px){.creator-highlights{grid-template-columns:1fr}.creator-highlights>div{text-align:left}}
+
+/* Calculator entry: larger phone keys and fractions anchored above precision. */
+@media (max-width:480px) {
+  #calc .calc-shell { min-height:770px; }
+  #calc .calc-entry-grid { flex:1 0 auto; }
+  #calc .keypad { grid-template-rows:repeat(4,60px); }
+  #calc .keypad button {
+    height:60px; min-height:60px; max-height:60px; font-size:25px;
+  }
+  #calc .keypad .op { font-size:27px; }
+  #calc .calc-fraction-side { margin-top:auto; padding-top:10px; }
+  #calc .precision { margin-top:6px; }
+}

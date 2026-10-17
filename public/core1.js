@@ -83,6 +83,11 @@ let cStore = null,
   cSign = 1,
   cFracNum = null,
   cHasMeasure = false;
+// Keep entry steps so committed units and shortcut fractions can be erased.
+let cEntryHistory = [];
+function cRememberEntry() {
+  cEntryHistory.push({ cBase, cBuf, cTouched, cFracNum, cHasMeasure, cHist });
+}
 function cFracValue() {
   if (cFracNum === null) return null;
   let d = parseFloat(cBuf);
@@ -117,6 +122,7 @@ function cDisplayVal() {
 }
 function cPrepare() {
   if (cAfterEquals) {
+    cEntryHistory = [];
     cStore = null;
     cStoreKind = null;
     cOp = null;
@@ -133,6 +139,7 @@ function cPrepare() {
 function cKey(k) {
   cPrepare();
   if (k === '.' && cBuf.includes('.')) return;
+  cRememberEntry();
   cBuf += k;
   cTouched = true;
   if (cFracNum !== null) cHist = 'Fraction: ' + cFracNum + ' / ' + cBuf;
@@ -156,6 +163,7 @@ function cSlash() {
     cRender();
     return;
   }
+  cRememberEntry();
   cFracNum = n;
   cBuf = '';
   cTouched = true;
@@ -173,6 +181,7 @@ function cCommitCustomFraction() {
 }
 function cFeet() {
   cPrepare();
+  if (cBuf || cFracNum !== null) cRememberEntry();
   if (cFracNum !== null) {
     cCommitCustomFraction();
     cHasMeasure = true;
@@ -191,6 +200,7 @@ function cFeet() {
 }
 function cInch() {
   cPrepare();
+  if (cBuf || cFracNum !== null) cRememberEntry();
   if (cFracNum !== null) {
     cCommitCustomFraction();
     cHasMeasure = true;
@@ -213,6 +223,7 @@ function cCommitPending() {
 }
 function cFraction(n, d) {
   cPrepare();
+  cRememberEntry();
   cCommitPending();
   cBase += n / d;
   cTouched = true;
@@ -244,6 +255,7 @@ function opSym(op) {
   return op === '*' ? '×' : op === '/' ? '÷' : op;
 }
 function cResetEntry() {
+  cEntryHistory = [];
   cBase = 0;
   cBuf = '';
   cTouched = false;
@@ -309,6 +321,11 @@ function cEquals() {
   }
 }
 function cBack() {
+  if (cEntryHistory.length) {
+    ({ cBase, cBuf, cTouched, cFracNum, cHasMeasure, cHist } = cEntryHistory.pop());
+    cRender();
+    return;
+  }
   if (cBuf) cBuf = cBuf.slice(0, -1);
   else if (cFracNum !== null) {
     cBuf = String(cFracNum);
@@ -323,6 +340,7 @@ function cToggleSign() {
   cRender();
 }
 function cClear() {
+  cEntryHistory = [];
   cStore = null;
   cStoreKind = null;
   cOp = null;
